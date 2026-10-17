@@ -190,3 +190,24 @@ check_parity.py 与真实上游 PPO CPU reference 使用相同权重、轨迹和
 新增 scripts/long_training.py：后台监督、每 5 秒资源采样、Git/命令 manifest、完成/失败状态；记录 GPU 频率、可用 DRM engine 利用率、进程 CPU/RSS、系统内存/swap、所有 thermal zone。没有可读占用计数器时用 null，不用频率冒充占用。NPU 未参与，记录未使用且占用未知。
 
 train.py 增加 rollout/update/checkpoint 阶段进度文件与原始奖励均值；未改变 PPO 更新公式。语法检查通过。
+
+### 已启动的长训练
+
+- 启动时间：2026-10-17 04:08:32 UTC。
+- 服务：rl-flare-long-20261017-01.service（systemd 用户服务）。
+- 运行目录：records/run_long_20261017_01。
+- 训练 PID：14288；监督器 PID：14285（以运行目录 status.json 为准）。
+- 实验源码 commit：a0c3b64906fc506e8f3092860a335172cc7a569a。
+- 已进入 rollout 和 PPO update 阶段；后台服务保持运行。
+- 训练进程启动后，DRM fdinfo 实际暴露 msm drm-engine-gpu 纳秒计数器；监控按 drm-client-id 去重，再用相邻采样的时间差计算训练进程引擎占用。先前在空闲进程检查不到，不等于训练时没有计数器。
+- 2026-10-17 04:10:18 UTC 的 5 秒采样窗口：GPU 进程引擎占用约 18.2%，瞬时频率 315 MHz，GPU 传感器最大值 52.9°C；CPU 进程 40.2%（单核 100% 基准），RSS 1.16 GiB，CPU 传感器最大值 70.4°C。这是初始编译/第一轮阶段的样本，不能当作稳定性能结论。
+- NPU 未参与，未测百分比。
+- 新增 scripts/training_status.py 提供简洁只读状态，可 --watch 持续显示。
+
+### 长训练 01 的驱动停滞与重启准备
+
+首轮更新没有完成。线程显示 RustiCL 队列 dma_fence_default_wait；内核 04:12:49～04:13:01 UTC 多次记录 `hangcheck detected gpu lockup rb 0`、offending task 为本次训练的 rusticl queue t。已停止 rl-flare-long-20261017-01.service，保留全部监控文件；没有 checkpoint，不能宣称此配置训练成功。
+
+暂不能确定根因，较大 minibatch=200 的 GPU kernel 是待验证因素。下一次试用 power-of-two minibatch=64：8 环境 × 32 步 / 4 minibatches，500 轮，共 128,000 条样本；5 epochs 不变。此调整不是已证实修复。
+
+增加 PPO forward/backward/optimizer 的批次进度、SIGUSR1 Python 栈转储，以及监督器 progress timeout。新实验设置 180 秒无进展则转储并终止，保留失败状态，防止把活进程误报为正常训练。

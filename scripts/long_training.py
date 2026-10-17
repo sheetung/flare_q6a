@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Supervise one bounded training run and persist resource telemetry."""
-import argparse,json,os,subprocess,time
+import argparse,json,os,subprocess,time,signal
 from datetime import datetime,timezone
 from pathlib import Path
 import psutil
@@ -30,7 +30,7 @@ def drm(pid):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',required=True);ap.add_argument('--envs',type=int,default=8)
     ap.add_argument('--steps',type=int,default=100);ap.add_argument('--iterations',type=int,default=200)
-    ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');a=ap.parse_args()
+    ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600);a=ap.parse_args()
     out=Path(a.output).resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'status.json').exists():raise RuntimeError('Existing supervised run directory; use a new output directory')
     cmd=[str(ROOT/'scripts/run.sh'),'flare_q6a/train.py','--physics','genesis','--envs',str(a.envs),
@@ -39,14 +39,14 @@ def main():
     try:commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     except subprocess.CalledProcessError:commit=None
     manifest={'started_utc':utc(),'git_commit':commit,'command':cmd,'samples_requested':a.envs*a.steps*a.iterations,
-        'monitor_interval_seconds':a.interval,'npu':'not used by this training pipeline',
+        'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'npu':'not used by this training pipeline',
         'gpu_utilization':'DRM engine-time delta when available, otherwise null; frequency is not utilization'}
     write(out/'manifest.json',manifest)
     with (out/'training.log').open('a',buffering=1) as log, (out/'telemetry.jsonl').open('a',buffering=1) as tele:
         child=subprocess.Popen(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
         proc=psutil.Process(child.pid);proc.cpu_percent()
         status={'state':'running','training_pid':child.pid,'supervisor_pid':os.getpid(),**manifest}
-        write(out/'status.json',status);previous={};prev_time=time.monotonic();last_progress=None
+        write(out/'status.json',status);previous={};prev_time=time.monotonic();last_progress=None;last_stamp=None;last_advance=time.monotonic()
         try:
             while True:
                 now=time.monotonic();counters=drm(child.pid);util=None
@@ -70,6 +70,8 @@ def main():
                 freq=read('/sys/class/devfreq/3d00000.gpu/cur_freq')
                 try:last_progress=json.loads((out/'progress.json').read_text())
                 except (OSError,ValueError):pass
+                stamp=last_progress.get('updated_unix') if last_progress else None
+                if stamp!=last_stamp:last_stamp,last_advance=stamp,now
                 row={'utc':utc(),'pid':child.pid,'process_cpu_percent_one_core_basis':cpu,
                      'process_cpu_percent_total_capacity':cpu/psutil.cpu_count() if cpu is not None else None,
                      'process_rss_bytes':rss,'threads':threads,'system_memory_available_bytes':vm.available,
@@ -78,6 +80,15 @@ def main():
                      'temperatures_c':temps,'maximum_sensor_temperature_c':max(temps.values()) if temps else None,
                      'npu_used_by_training':False,'npu_utilization_percent':None,'training_progress':last_progress}
                 tele.write(json.dumps(row)+'\n');write(out/'latest_telemetry.json',row)
+                if a.stall_timeout>0 and now-last_advance>a.stall_timeout:
+                    try:os.kill(child.pid,signal.SIGUSR1)
+                    except ProcessLookupError:pass
+                    time.sleep(1)
+                    child.terminate()
+                    try:child.wait(timeout=10)
+                    except subprocess.TimeoutExpired:child.kill();child.wait()
+                    status.update(state='failed',reason='training progress timeout',exit_code=124,ended_utc=utc())
+                    write(out/'status.json',status);return 124
                 code=child.poll()
                 if code is not None:
                     status.update(state='completed' if code==0 else 'failed',exit_code=code,ended_utc=utc())

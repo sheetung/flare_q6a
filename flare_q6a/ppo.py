@@ -57,7 +57,7 @@ class PPO:
         self.opt=Adam(self.params,lr=self.lr,fused=False)
         self.rng=np.random.default_rng(seed)
         self.iteration,self.updates=0,0
-    def update(self,batch,epochs=None,permutation=None):
+    def update(self,batch,epochs=None,permutation=None,progress_callback=None):
         cfg=self.cfg;epochs=epochs or cfg['num_learning_epochs']
         count=batch['obs'].shape[0];mb=cfg['num_mini_batches'];size=count//mb
         if size<1:raise ValueError('rollout must contain at least num_mini_batches samples')
@@ -67,19 +67,22 @@ class PPO:
         assert sorted(perm.tolist())==list(range(mb*size))
         stats=[]
         with Context(TRAINING=1):
-            for _ in range(epochs):
+            for epoch in range(epochs):
                 for i in range(mb):
                     idx=Tensor(perm[i*size:(i+1)*size].astype(np.int32),device='CL')
                     b={k:v[idx] for k,v in batch.items()}
+                    if progress_callback:progress_callback('ppo_forward',epoch=epoch+1,minibatch=i+1)
                     self.opt.zero_grad()
                     total,policy,vl,entropy,kl=losses(self.model,b,cfg)
                     klval=float(kl.detach().item())
                     self.lr=adapt_lr(self.lr,klval,cfg)
                     self.opt.lr.assign([self.lr]).realize()
+                    if progress_callback:progress_callback('ppo_backward',epoch=epoch+1,minibatch=i+1)
                     total.backward()
                     norm=(sum(p.grad.square().sum() for p in self.params)+1e-12).sqrt()
                     factor=(cfg['max_grad_norm']/(norm+1e-6)).clip(0,1).realize()
                     for p in self.params:p.grad=(p.grad*factor).realize()
+                    if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
                     self.opt.step();self.updates+=1
                     stats.append([float(t.detach().item()) for t in (total,policy,vl,entropy)]+[klval])
         values=np.asarray(stats);assert np.isfinite(values).all()

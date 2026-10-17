@@ -184,3 +184,11 @@ scripts/run.sh scripts/long_training.py --output records/run_long_example \
 GPU 占用仅在内核提供 DRM engine-time 计数器时计算，否则为 null；GPU 频率单独记录，不能替代百分比。NPU 未用于训练，NPU 百分比为 null，不能伪记为已测 0%。CPU 百分比同时记录单核 100% 基准和整机容量基准。温度包含所有可读 thermal zone，最大值不一定是 GPU 温度。
 
 使用 systemd 用户服务时，任务可在聊天结束后继续；用户注销或系统重启可能终止任务。检查点可按前述方法恢复。监督器进程不做自动重启，失败会保留 exit code 和训练日志。
+
+查看某次后台长训练的简洁实时状态：
+
+```bash
+python3 scripts/training_status.py --output records/run_long_20261017_01 --watch
+```
+
+`--output` 改为实际运行目录；不加 `--watch` 则输出一次。后台 systemd 用户服务可用 `systemctl --user status <服务名>` 查看，用 `systemctl --user stop <服务名>` 停止；只保留已完成轮次的检查点，未完成的轮次不会保存。

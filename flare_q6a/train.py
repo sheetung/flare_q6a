@@ -1,5 +1,5 @@
 """FLARE Genesis Vulkan physics + OpenCL PPO. No flight hardware access."""
-import argparse,json,time
+import argparse,json,time,faulthandler,signal
 from pathlib import Path
 import yaml
 import numpy as np
@@ -9,6 +9,8 @@ from env import CableEnv,ROOT
 from ppo import ActorCritic,PPO
 
 def main():
+    faulthandler.enable()
+    faulthandler.register(signal.SIGUSR1,all_threads=True)
     p=argparse.ArgumentParser()
     p.add_argument('--envs',type=int,default=16)
     p.add_argument('--steps',type=int,default=100)
@@ -79,7 +81,7 @@ def main():
                'advantages':((ad-ad.mean())/(ad.std(correction=1)+1e-8)).detach().realize(),
                'returns':Tensor.stack(*returns[::-1]).reshape(-1).detach().realize()}
         progress('ppo_update',iteration=trainer.iteration+1)
-        stats=trainer.update(batch)
+        stats=trainer.update(batch,progress_callback=lambda phase,**extra:progress(phase,iteration=trainer.iteration+1,**extra))
         assert np.isfinite(obs.numpy()).all()
         row=dict(iteration=trainer.iteration,samples=args.envs*args.steps,seconds=time.perf_counter()-ts,
                  resets=int(flatten(5).float().sum().item()),device='CL',
