@@ -1,42 +1,5 @@
-# 当前状态：第154轮均值/探索策略评估完成
+# 当前任务：原FLARE刚性吊挂航点跟踪
 
-原长训练 records/run_rigid_hover_20261017_094009_240109 进程已停止，最新完整checkpoint为154轮。本次mean/sample各16回合评估完成，两者都未稳定悬停；结果见 policy_evaluation_comparison_154.json。评估冻结权重、无训练更新，没有自动重启长训练。
+默认实验 s1_waypoint_passing_rigid，4环境×100步，原26维观测/奖励/目标/PID/PPO。独立模型 assets/rigid_suspended_system/rigid_suspended_system.urdf。自定义悬停配置与代码已删除，历史运行记录保留。
 
-# 当前状态：部分重置缺陷已修复并完成对照测试
-
-用户旧长训练 records/run_rigid_hover_20261017_075550_930855 已停止，检查点和日志保留，但受到错误重置影响。新环境 reset_version=2，应从头训练。16环境×300步随机动作及非连续ID重置测试均完成，无新长训任务。详见 rigid_hover_reset_comparison.json。
-
-# 当前训练状态（新增刚性悬停环境测试完成）
-
-rigid_hover 的物理检查、8×32 两轮训练及检查点加载评估已完成；没有启动长训练。最终测试检查点：records/run_rigid_hover_smoke_v2/checkpoint.npz，实验名 rigid_hover、19维输入。原柔性绳 checkpoint 不兼容新环境。详见 flare_q6a/README_rigid_hover.md。
-
-# 当前训练状态（2026-10-17 GPU 测试完成）
-
-本轮 GPU 测试全部结束，未启动新的长训练。16×32 合并提交版本三轮及 GPU 恢复后两轮均完成，32×32/minibatch 256 因内核 GPU lockup 停止。结果见 gpu_benchmark_results.json。旧用户训练及其检查点保留；下方为历史快照。
-
-# 历史后台长训练 03（已停止）
-
-- 服务：`rl-flare-long-20261017-03.service`
-- 运行目录：`records/run_long_20261017_03`
-- 启动 UTC：2026-10-17T04:53:54.642865+00:00
-- 实验源码 commit：`276497b45f692a46e650085286a23645daf79edd`
-- 训练 PID：16625；监督器 PID：16622（以 status.json 为准）。
-- 原版 Genesis Vulkan + OpenCL PPO，8 环境 × 32 步，5 epochs / 4 minibatches。
-- 从旧 run_long_20261017_02 第 49 轮 checkpoint 恢复，追加 451 轮至总第 500 轮。
-- 每 5 秒监控，180 秒无训练进展看门狗；NPU 未参与。
-
-静态快照：已记录第 53 轮，完整回合窗口 11 个；平均回报 -0.3062300020127292，平均回合长度 64.0 步。最新进度以 progress.json 为准，此文不实时刷新。
-
-```bash
-python3 scripts/training_status.py --output records/run_long_20261017_03 --watch
-tail -f records/run_long_20261017_03/training.log
-systemctl --user status rl-flare-long-20261017-03.service
-```
-
-日志：training.log；结构化指标：metrics.jsonl / metrics.json；TensorBoard：tensorboard/；资源时序：telemetry.jsonl；当前资源：latest_telemetry.json；恢复文件：checkpoint.npz。
-
-日志包含完整回合统计、六项奖励分解、航点到达数、位置误差、摆角、终止原因、FPS、KL、动作噪声和 ETA。GPU 利用率是本进程 DRM 引擎时间差，不含其他进程。
-
-旧 run_long_20261017_02 已在第 49 轮检查点保存后停止，旧日志保留。完整物理状态未恢复，环境 fresh reset；旧日志没有完整回合明细，无法补造，新的回合窗口从恢复后开始积累。
-
-更早的 run_long_20261017_01 因 GPU lockup 停止，没有检查点，不是成功实验。
+静态及Vulkan物理对齐检查已通过，记录见 rigid_waypoint_alignment_checks.log。下一步运行4×100两轮训练验证；没有自动启动长期训练。默认每100轮及正常结束保存checkpoint，旧悬停checkpoint不能续训此任务。

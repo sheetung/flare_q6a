@@ -11,7 +11,7 @@ class EvaluationMetrics:
         active=self.active();reward=np.asarray(reward);done=np.asarray(done,dtype=bool);timeout=np.asarray(timeout,dtype=bool)
         self.length[active]+=1;self.returns[active]+=reward[active];self.total_samples+=int(active.sum())
         self.clipped+=int((np.abs(action[active])>1).sum());self.action_components+=int(action[active].size)
-        for key in ('drone_error_m','payload_error_m','swing_deg','hover_success','rod_length_error_m'):
+        for key in ('drone_error_m','payload_error_m','swing_deg','waypoint_hits'):
             if key in info:
                 value=np.asarray(info[key]);self.sums.setdefault(key,np.zeros(self.n));self.sums[key][active]+=value[active]
                 self.peaks.setdefault(key,np.zeros(self.n));self.peaks[key][active]=np.maximum(self.peaks[key][active],value[active])

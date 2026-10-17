@@ -1,15 +1,13 @@
-# GPU 适配层
+# 高通 GPU 适配层
 
-完整安装、训练、续训和其他高通板迁移步骤见 [根目录 README](../README.md)。
+安装、训练与移植见[根目录 README](../README.md)。当前默认任务 `s1_waypoint_passing_rigid`，原FLARE航点目标/26维观测/奖励/控制/PPO配置保持，4环境×100步。刚性模型为 `assets/rigid_suspended_system/rigid_suspended_system.urdf`。
 
-- `genesis_bridge.py`：原版 FLARE/Genesis Vulkan + GsTaichi 兼容层。GPU 物理，CPU 观测/奖励与数据 staging；Vulkan ICD 可通过 `RL_VULKAN_ICD` 配置。
-- `ppo.py`：与 rsl_rl v1.0.2 对齐的直接 sigma 参数、minibatch、Gaussian KL 自适应学习率、clipped PPO/value loss、梯度裁剪、Adam 和 schema-2 训练检查点。
-- `train.py`：原版仿真采样与 GPU PPO；默认原版 rsl 超时 bootstrap，可显式选 terminal 变体。
-- `evaluate.py`：加载训练检查点或仅模型文件，在仿真中评估，兼容早期 log-std 模型。
-- `check_parity.py`：真实上游 CPU PPO 对照 GPU loss、梯度、参数更新、学习率及断点恢复。
-- `check_ppo.py`：Gaussian/PPO/GAE 基础数值参考。
-- `check_env.py`、`env.py`：独立简化环境诊断，非原版柔性绳物理。
+- rigid_waypoint_env.py：原环境副本，仅更换模型和刚性关节重置。
+- genesis_bridge.py：GsTaichi Vulkan与CPU staging兼容层，原柔性任务仍可用-e s1_waypoint_passing。
+- task_config.py：读取原上游配置、定义低并行默认值和模型/环境签名。
+- ppo.py：rsl_rl v1.0.2的OpenCL移植，许可证见LICENSE.rsl_rl。
+- train.py / evaluate.py：训练、冻结策略评估与记录。
+- check_waypoint_alignment.py：原逻辑对齐、质量、物理与部分重置验证。
+- check_parity.py：CPU参考与GPU PPO数值对照。
 
-检查点恢复优化器和随机数状态，但环境从 fresh reset 开始；尚无完整柔性绳物理状态快照。旧版仅网络参数的 NPZ 不能用于恢复优化器。
-
-上游代码仍位于独立 submodule；不在此目录复制。PPO 移植许可证见 LICENSE.rsl_rl。长期稳定性、收敛、PX4/NPU 和第二块板的迁移均未验证。
+自定义悬停环境及配置已删除，历史结果保留。长期稳定性与收敛尚未验证。

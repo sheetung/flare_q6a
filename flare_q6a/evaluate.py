@@ -8,6 +8,7 @@ from tinygrad.nn.state import get_state_dict
 from ppo import ActorCritic,load_policy
 from env import CableEnv,ROOT
 from evaluation_metrics import EvaluationMetrics
+from task_config import RIGID_TASK,FLEX_TASK,task_signature
 
 def main():
     p=argparse.ArgumentParser()
@@ -16,7 +17,7 @@ def main():
     p.add_argument('--episodes',type=int,help='total complete episodes, balanced across environments')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--envs',type=int,default=2);p.add_argument('--test-episode-steps',type=int,default=0)
-    p.add_argument('-e','--exp_name',choices=['s1_waypoint_passing','rigid_hover'],default='s1_waypoint_passing')
+    p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
     p.add_argument('-v','--vis',action='store_true');p.add_argument('--mode',choices=['mean','sample'],default='sample',help='sample adds learned Gaussian exploration noise (default); mean disables it')
     p.add_argument('--seed',type=int,default=123);p.add_argument('--output')
     a=p.parse_args()
@@ -37,28 +38,20 @@ def main():
         run=meta.get('run',{})
         if run.get('experiment','s1_waypoint_passing')!=a.exp_name:raise ValueError('checkpoint experiment mismatch')
         if run.get('physics',a.physics)!=a.physics:raise ValueError('checkpoint physics mismatch')
-        if a.exp_name=='rigid_hover':
-            import yaml
-            if run.get('environment_config')!=yaml.safe_load((ROOT/'configs/rigid_hover.yaml').read_text()):
-                raise ValueError('checkpoint environment configuration mismatch')
+        if a.exp_name==RIGID_TASK and run.get('task_signature')!=task_signature(True):raise ValueError('checkpoint task/model mismatch')
     manifest=dict(started_utc=datetime.now(timezone.utc).isoformat(),arguments=vars(a),checkpoint_source=str(source),
         checkpoint_sha256=sha,checkpoint_iteration=meta.get('iteration'),hardware=hardware,
         mode=a.mode,seed=a.seed,training_updates=False)
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2))
     print(f'Evaluation output: {out}\nFrozen checkpoint iteration: {meta.get("iteration")} | policy mode: {a.mode}',flush=True)
     np.random.seed(a.seed);Tensor.manual_seed(a.seed)
-    model=ActorCritic(19 if a.exp_name=='rigid_hover' else 26);load_policy(model,snapshot)
+    model=ActorCritic(26);load_policy(model,snapshot)
     before={k:v.numpy().copy() for k,v in get_state_dict(model).items()}
-    if a.exp_name=='rigid_hover':
-        if a.physics!='genesis':raise ValueError('rigid_hover requires Genesis')
-        from rigid_hover import RigidHover
-        env=RigidHover(a.envs,show_viewer=a.vis,seed=a.seed)
-        if a.test_episode_steps:env.max_episode_length=a.test_episode_steps
-        limit=env.max_episode_length;dt=env.dt
-    elif a.physics=='genesis':
+    if a.exp_name==RIGID_TASK and a.physics!='genesis':raise ValueError('rigid waypoint task requires Genesis')
+    if a.physics=='genesis':
         from genesis_bridge import GenesisBridge,torch
         torch.manual_seed(a.seed)
-        env=GenesisBridge(a.envs,show_viewer=a.vis)
+        env=GenesisBridge(a.envs,show_viewer=a.vis,rigid=a.exp_name==RIGID_TASK)
         if a.test_episode_steps:env.env.max_episode_length=a.test_episode_steps
         limit=env.env.max_episode_length+1;dt=env.env.dt
     else:env=CableEnv(a.envs);limit=1500;dt=.01

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<robot name="rigid_payload_hover">
+<robot name="flare_rigid_suspended_system">
   <properties arm="0.08" kf="3.16e-10" km="7.94e-12" thrust2weight="2.25" max_speed_kmh="30" gnd_eff_coeff="11.36859" prop_radius="2.31348e-2" drag_coeff_xy="9.1785e-3" drag_coeff_z="10.311e-3" dw_coeff_1="276700.18" dw_coeff_2=".16" dw_coeff_3="-.11" />
   <material name="blue">
     <color rgba="0.2 0.2 0.2 1" />
@@ -149,13 +149,13 @@
   <link name="rigid_rod">
     <inertial>
       <origin xyz="0 0 -0.24" rpy="0 0 0" />
-      <mass value="0.005" />
-      <inertia ixx="9.6e-05" iyy="9.6e-05" izz="1e-07" ixy="0" ixz="0" iyz="0" />
+      <mass value="0.006180000000000001" />
+      <inertia ixx="0.00011869462500000001" iyy="0.00011869462500000001" izz="7.725000000000001e-08" ixy="0" ixz="0" iyz="0" />
     </inertial>
     <visual>
       <origin xyz="0 0 -0.24" />
       <geometry>
-        <cylinder length=".48" radius=".004" />
+        <cylinder length=".48" radius=".005" />
       </geometry>
       <material name="hover_rigid_rod">
         <color rgba="0.2 0.3 0.9 1" />

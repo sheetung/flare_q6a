@@ -4,6 +4,8 @@ import argparse,json,os,subprocess,time,signal,sys,threading
 from datetime import datetime,timezone
 from pathlib import Path
 import psutil
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'flare_q6a'))
+from task_config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,train_config
 
 ROOT=Path(__file__).resolve().parents[1]
 def utc():return datetime.now(timezone.utc).isoformat()
@@ -40,10 +42,10 @@ def mirror_log(path,stop):
             else:stop.wait(0.1)
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=8)
-    ap.add_argument('--steps',type=int,default=32);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=500)
+    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=DEFAULT_ENVS)
+    ap.add_argument('--steps',type=int,default=train_config()['runner']['num_steps_per_env']);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS)
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600)
-    ap.add_argument('-e','--exp_name',choices=['s1_waypoint_passing','rigid_hover'],default='s1_waypoint_passing')
+    ap.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
     ap.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     a=ap.parse_args()
     out=Path(a.output).resolve() if a.output else ROOT/'records'/datetime.now(timezone.utc).strftime('run_'+a.exp_name+'_%Y%m%d_%H%M%S_%f')

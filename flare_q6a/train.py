@@ -9,24 +9,27 @@ from tinygrad.nn.state import get_state_dict
 from env import CableEnv,ROOT
 from ppo import ActorCritic,PPO
 from metrics import ExperimentLogger
+from task_config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,train_config,task_signature
 
 def main():
     faulthandler.enable()
     faulthandler.register(signal.SIGUSR1,all_threads=True)
     p=argparse.ArgumentParser()
-    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=8)
-    p.add_argument('--steps',type=int,default=32)
-    p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=3,help='additional iterations, including on resume')
+    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=DEFAULT_ENVS)
+    p.add_argument('--steps',type=int,help='default: upstream runner.num_steps_per_env (100)')
+    p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
     p.add_argument('--minibatches',type=int)
     p.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>')
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--timeout-bootstrap',choices=['rsl','terminal'],default='rsl')
-    p.add_argument('-e','--exp_name',choices=['s1_waypoint_passing','rigid_hover'],default='s1_waypoint_passing')
+    p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
     p.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     args=p.parse_args()
-    if args.exp_name=='rigid_hover' and args.physics!='genesis':p.error('rigid_hover requires Genesis Vulkan physics')
+    if args.exp_name==RIGID_TASK and args.physics!='genesis':p.error('rigid waypoint task requires Genesis Vulkan physics')
+    source_train=train_config()
+    if args.steps is None:args.steps=source_train['runner']['num_steps_per_env']
     if args.vis and args.physics!='genesis':p.error('-v requires --physics genesis')
     assert min(args.envs,args.steps,args.iterations)>0
     assert Device.DEFAULT=='CL','CPU training fallback forbidden'
@@ -37,7 +40,7 @@ def main():
         temp=out/'progress.json.tmp';temp.write_text(json.dumps(data));temp.replace(out/'progress.json')
     progress('initializing')
     resume=Path(args.resume).resolve() if args.resume else None
-    cfg=yaml.safe_load((ROOT/'Flare/config/train/s1_train_config.yaml').read_text())['algorithm']
+    cfg=source_train['algorithm']
     if args.epochs is not None:cfg['num_learning_epochs']=args.epochs
     if args.minibatches is not None:cfg['num_mini_batches']=args.minibatches
     cfg['timeout_bootstrap']=args.timeout_bootstrap
@@ -47,20 +50,19 @@ def main():
         with np.load(resume,allow_pickle=False) as d:meta=json.loads(str(d['metadata']))
         if meta['run']['physics']!=args.physics:raise ValueError('resume physics mismatch')
         if meta['run'].get('experiment','s1_waypoint_passing')!=args.exp_name:raise ValueError('resume experiment mismatch')
-        if args.exp_name=='rigid_hover':
-            if meta['run'].get('environment_config')!=yaml.safe_load((ROOT/'configs/rigid_hover.yaml').read_text()):raise ValueError('resume environment config mismatch')
-    Tensor.manual_seed(1);setup_start=time.perf_counter()
-    if args.exp_name=='rigid_hover':
-        from rigid_hover import RigidHover
-        env=RigidHover(args.envs,show_viewer=args.vis)
-    elif args.physics=='genesis':
-        from genesis_bridge import GenesisBridge
-        env=GenesisBridge(args.envs,show_viewer=args.vis)
+        if args.exp_name==RIGID_TASK and meta['run'].get('task_signature')!=task_signature(True):raise ValueError('resume rigid waypoint task/model mismatch')
+    Tensor.manual_seed(source_train['seed']);setup_start=time.perf_counter()
+    if args.physics=='genesis':
+        from genesis_bridge import GenesisBridge,torch
+        torch.manual_seed(source_train['seed'])
+        env=GenesisBridge(args.envs,show_viewer=args.vis,rigid=args.exp_name==RIGID_TASK)
+        # Original FLARE calls learn(init_at_random_ep_len=True).
+        env.env.episode_length_buf=torch.randint_like(env.env.episode_length_buf,high=env.env.max_episode_length)
     else:env=CableEnv(args.envs)
     num_obs=env.obs().shape[1]
     model=ActorCritic(num_obs);trainer=PPO(model,cfg)
-    snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs}
-    if args.exp_name=='rigid_hover':snapshot['environment']=env.cfg
+    snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train}
+    if args.physics=='genesis':snapshot.update(environment=env.source_config,task_signature=env.signature,random_initial_episode_ages=True)
     (out/'config.json').write_text(json.dumps(snapshot,indent=2))
     loaded_meta=trainer.load(resume) if resume else {}
     obs=env.obs();started=time.perf_counter();history=[]
@@ -76,7 +78,9 @@ def main():
         except (OSError,ValueError,KeyError):pass
     logger=ExperimentLogger(out,args.envs,getattr(env,'dt',.01),trainer.iteration+args.iterations,initial_samples,initial_time)
     logger.restore_episodes(logger_state)
-    print('Logging: completed-episode window=100; '+('hover criterion is per-step, not episode success.' if args.exp_name=='rigid_hover' else 'waypoint counts are not episode success rates; termination reasons may overlap.'),flush=True)
+    print('Logging: original FLARE waypoint task; completed-episode window=100; waypoint counts are not episode success rates.',flush=True)
+    save_interval=source_train['runner']['save_interval']
+    target_iteration=trainer.iteration+args.iterations
     for _ in range(args.iterations):
         ts=time.perf_counter();roll=[];logger.begin_iteration()
         progress('rollout',iteration=trainer.iteration+1,step=0,steps=args.steps)
@@ -117,10 +121,11 @@ def main():
                  **stats)
         row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
         history.append(row)
-        run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':getattr(env,'cfg',{}).get('observation_schema','flare_26'),'physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state()}
-        if args.exp_name=='rigid_hover':run['environment_config']=env.cfg
-        progress('checkpoint',iteration=trainer.iteration)
-        trainer.save(out/'checkpoint.npz',run)
+        run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':'flare_26','physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state()}
+        if args.physics=='genesis':run.update(environment_config=env.source_config,task_signature=env.signature)
+        if trainer.iteration % save_interval==0 or trainer.iteration==target_iteration:
+            progress('checkpoint',iteration=trainer.iteration)
+            trainer.save(out/'checkpoint.npz',run)
         (out/'metrics.json').write_text(json.dumps(history,indent=2))
     logger.close()
     np.savez(out/'model.npz',**{k:v.numpy() for k,v in get_state_dict(model).items()})
