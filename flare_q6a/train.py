@@ -20,6 +20,7 @@ def main():
     p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
     p.add_argument('--minibatches',type=int)
+    p.add_argument('--microbatch-size',type=int,default=100,help='GPU compute chunk; logical PPO minibatches and Adam updates unchanged')
     p.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>')
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
@@ -45,11 +46,7 @@ def main():
     if args.minibatches is not None:cfg['num_mini_batches']=args.minibatches
     cfg['timeout_bootstrap']=args.timeout_bootstrap
     assert cfg['num_learning_epochs']>0 and 0<cfg['num_mini_batches']<=args.envs*args.steps
-    minibatch_size=args.envs*args.steps//cfg['num_mini_batches']
-    if minibatch_size>=200:
-        p.error(f'minibatch size {minibatch_size} is blocked on this Q6A OpenCL adaptation: '
-                'GPU lockups confirmed at 200, 256 and 400 samples. '
-                'Use -B 4 with the original 100 steps / 4 minibatches; smaller sizes still require validation.')
+    if not 1<=args.microbatch_size<200:p.error('--microbatch-size must be between 1 and 199; default 100 is validated')
     # Validate checkpoint mode before expensive scene construction.
     if resume:
         with np.load(resume,allow_pickle=False) as d:meta=json.loads(str(d['metadata']))
@@ -65,7 +62,7 @@ def main():
         env.env.episode_length_buf=torch.randint_like(env.env.episode_length_buf,high=env.env.max_episode_length)
     else:env=CableEnv(args.envs)
     num_obs=env.obs().shape[1]
-    model=ActorCritic(num_obs);trainer=PPO(model,cfg)
+    model=ActorCritic(num_obs);trainer=PPO(model,cfg,microbatch_size=args.microbatch_size)
     snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train}
     if args.physics=='genesis':snapshot.update(environment=env.source_config,task_signature=env.signature,random_initial_episode_ages=True)
     (out/'config.json').write_text(json.dumps(snapshot,indent=2))

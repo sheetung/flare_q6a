@@ -8,7 +8,7 @@ import random
 import sys
 from pathlib import Path
 import numpy as np
-from tinygrad import Tensor, Context, nn
+from tinygrad import Tensor, Context, nn, TinyJit
 from tinygrad.nn.optim import Adam
 from tinygrad.nn.state import get_parameters, get_state_dict
 from hardware import require_adreno
@@ -48,16 +48,40 @@ def losses(model,batch,cfg):
     return total,surrogate,vl,entropy,kl
 
 class PPO:
-    def __init__(self,model,cfg,seed=1):
+    def __init__(self,model,cfg,seed=1,microbatch_size=100):
+        if microbatch_size<1 or microbatch_size>=200:raise ValueError("GPU microbatch size must be between 1 and 199; default 100 is validated")
+        self.microbatch_size=microbatch_size
         self.hardware=require_adreno()
         self.model,self.cfg=model,dict(cfg)
         self.params=get_parameters(model)
         assert all(p.device.startswith('CL') for p in self.params)
         self.batch_realize=os.environ.get('RL_PPO_BATCH_REALIZE','0')=='1'
+        self.jit_enabled=os.environ.get('RL_PPO_JIT','0')=='1'
+        self._chunk_runners={}
         self.lr=cfg['learning_rate']
         self.opt=Adam(self.params,lr=self.lr,fused=False)
         self.rng=np.random.default_rng(seed)
         self.iteration,self.updates=0,0
+    def _chunk(self,batch,idx,n,size):
+        keys=tuple(batch)
+        def compute(index,*inputs):
+            values=inputs[:len(keys)]
+            self.opt.zero_grad()
+            b={k:v[index] for k,v in zip(keys,values)}
+            total,policy,vl,entropy,kl=losses(self.model,b,self.cfg)
+            metrics=Tensor.stack(*[t.detach() for t in (total,policy,vl,entropy,kl)])
+            (total*(n/size)).backward()
+            grads=[p.grad.detach() for p in self.params]
+            if self.batch_realize or self.jit_enabled:Tensor.realize(*grads,metrics)
+            else:
+                grads=[g.realize() for g in grads]
+                metrics.realize()
+            return tuple(grads),metrics
+        if not self.jit_enabled:return compute(idx,*batch.values(),*self.params)
+        key=(keys,n,size,tuple(v.shape for v in batch.values()))
+        if key not in self._chunk_runners:self._chunk_runners[key]=TinyJit(compute)
+        return self._chunk_runners[key](idx,*batch.values(),*self.params)
+
     def update(self,batch,epochs=None,permutation=None,progress_callback=None):
         cfg=self.cfg;epochs=epochs or cfg['num_learning_epochs']
         count=batch['obs'].shape[0];mb=cfg['num_mini_batches'];size=count//mb
@@ -70,16 +94,32 @@ class PPO:
         with Context(TRAINING=1):
             for epoch in range(epochs):
                 for i in range(mb):
-                    idx=Tensor(perm[i*size:(i+1)*size].astype(np.int32),device='CL')
-                    b={k:v[idx] for k,v in batch.items()}
-                    if progress_callback:progress_callback('ppo_forward',epoch=epoch+1,minibatch=i+1)
-                    self.opt.zero_grad()
-                    total,policy,vl,entropy,kl=losses(self.model,b,cfg)
-                    klval=float(kl.detach().item())
+                    # Split compute only: a logical minibatch still has one global
+                    # gradient clip, one adaptive-KL decision and one Adam update.
+                    accumulated=None
+                    metrics=np.zeros(5,dtype=np.float64)
+                    for offset in range(0,size,self.microbatch_size):
+                        n=min(self.microbatch_size,size-offset)
+                        idx=Tensor(perm[i*size+offset:i*size+offset+n].astype(np.int32),device='CL')
+                        if progress_callback:progress_callback('ppo_chunk',epoch=epoch+1,minibatch=i+1,
+                            microbatch_offset=offset,microbatch_size=n,jit=self.jit_enabled)
+                        grads,chunk_metrics=self._chunk(batch,idx,n,size)
+                        values_chunk=chunk_metrics.numpy().astype(float)
+                        if not np.isfinite(values_chunk).all():
+                            raise FloatingPointError(f'PPO invalid losses: epoch={epoch+1}, minibatch={i+1}, offset={offset}, values={values_chunk.tolist()}')
+                        metrics+=values_chunk*(n/size)
+                        # Returned JIT buffers are reused; accumulate before replay.
+                        if accumulated is None:
+                            # Own buffers: a future JIT replay overwrites its outputs.
+                            accumulated=[g.clone().realize() for g in grads]
+                        elif self.batch_realize:
+                            accumulated=[a+g for a,g in zip(accumulated,grads)]
+                            Tensor.realize(*accumulated)
+                        else:accumulated=[(a+g).realize() for a,g in zip(accumulated,grads)]
+                    for p,g in zip(self.params,accumulated):p.grad=g
+                    klval=float(metrics[4])
                     self.lr=adapt_lr(self.lr,klval,cfg)
                     self.opt.lr.assign([self.lr]).realize()
-                    if progress_callback:progress_callback('ppo_backward',epoch=epoch+1,minibatch=i+1)
-                    total.backward()
                     norm=(sum(p.grad.square().sum() for p in self.params)+1e-12).sqrt()
                     factor=(cfg['max_grad_norm']/(norm+1e-6)).clip(0,1).realize()
                     if self.batch_realize:
@@ -87,20 +127,18 @@ class PPO:
                         Tensor.realize(*[p.grad for p in self.params])
                     else:
                         for p in self.params:p.grad=(p.grad*factor).realize()
-                    if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
                     norm_value=float(norm.detach().item())
-                    if not math.isfinite(klval) or not math.isfinite(norm_value):
-                        raise FloatingPointError(f'PPO invalid pre-update values: epoch={epoch+1}, minibatch={i+1}, size={size}, KL={klval}, gradient_norm={norm_value}')
+                    if not math.isfinite(norm_value):
+                        raise FloatingPointError(f'PPO invalid gradient norm: epoch={epoch+1}, minibatch={i+1}, size={size}, gradient_norm={norm_value}')
+                    if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
                     self.opt.step();self.updates+=1
                     sigma=self.model.std.numpy()
                     if progress_callback:progress_callback('ppo_checked',epoch=epoch+1,minibatch=i+1,
-                        minibatch_size=size,sigma=sigma.tolist(),gradient_norm=norm_value,learning_rate=self.lr)
+                        minibatch_size=size,microbatch_size=self.microbatch_size,sigma=sigma.tolist(),
+                        gradient_norm=norm_value,learning_rate=self.lr)
                     if not np.isfinite(sigma).all() or not (sigma>0).all():
                         raise FloatingPointError(f'PPO invalid policy sigma after update {self.updates}: epoch={epoch+1}, minibatch={i+1}, size={size}, sigma={sigma.tolist()}, gradient_norm={norm_value}, lr={self.lr}')
-                    if self.batch_realize:
-                        stats.append(Tensor.stack(*[t.detach() for t in (total,policy,vl,entropy)]).numpy().astype(float).tolist()+[klval])
-                    else:
-                        stats.append([float(t.detach().item()) for t in (total,policy,vl,entropy)]+[klval])
+                    stats.append(metrics.tolist())
         values=np.asarray(stats);assert np.isfinite(values).all()
         assert np.isfinite(self.model.std.numpy()).all() and (self.model.std.numpy()>0).all(), 'non-positive policy sigma'
         self.iteration+=1

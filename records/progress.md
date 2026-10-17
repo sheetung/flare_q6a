@@ -291,3 +291,7 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 2026-10-17：用户B16×100/4=400在第一轮末触发sigma断言。内核证据确认14:19:36起反复GPU lockup，offending task为该训练的rusticl queue，而非据断言推定正常学习发散；原日志无sigma数值，无法区分NaN/负值。增加每次更新前KL/梯度范数有限检查、更新后sigma实际数值与位置检查，以及ppo_failure.json。一次B16复现第一优化器更新同样锁死，已停止服务。驱动具体错误kernel未定位，未通过clamp修改原版sigma数学。
 
 当前Q6A入口在场景构建前拒绝minibatch≥200，明确记录已知200/256/400故障，低于200仍需验证，非硬件并行上限。任务、奖励、探索噪声、100步/5epochs/4minibatches默认不改。新增检查与rsl_rl原版数值对照PASS，参数最大误差4.556e-6；停止复现后OpenCL概率/裁剪/GAE恢复检查PASS；B16入口拒绝检查exit2。见b16_failure_diagnosis.json、b16_gpu_lockup_kernel.log及相关检查日志。B16大批次尚未修复，没有启动长训练。
+
+2026-10-17：按用户榨干硬件性能要求实现GPU microbatch梯度累积：默认compute chunk100，逻辑minibatch400分4块，按样本数加权梯度与KL；完整minibatch后仅一次全局裁剪、一次KL学习率调节、一次Adam，保留原5epochs/4minibatches=20更新。不再拦截逻辑大批次，仅约束单个GPU块<200；不改变任务、奖励、噪声或rollout100。监督入口转发--microbatch-size，默认100。
+
+新增check_microbatch与实际rsl_rl v1.0.2对照：1600样本/4minibatches/2epochs，micro100，参数误差7.749e-7，Adam一二阶状态与学习率/更新次数PASS，58.217s。JIT第一版未显式传入更新后的参数，数值对照失败已拒绝；第二版将参数作为JIT输入并复制复用的梯度输出，PASS误差4.841e-7、12.497s（包含测试初始化，非端到端训练）。RL_PPO_JIT=1与RL_PPO_BATCH_REALIZE=1目前显式启用测试；真实B16连续3轮运行中，测试开始时基于9383f6a工作区本次代码改动。默认JIT尚未开启，结果后续追加。

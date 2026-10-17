@@ -44,6 +44,7 @@ def mirror_log(path,stop):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=DEFAULT_ENVS)
     ap.add_argument('--steps',type=int,default=train_config()['runner']['num_steps_per_env']);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS)
+    ap.add_argument('--microbatch-size',type=int,default=100,help='GPU compute chunk; preserves logical PPO minibatches')
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600)
     ap.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
     ap.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
@@ -54,13 +55,13 @@ def main():
     if (out/'status.json').exists():raise RuntimeError('Existing supervised run directory; use a new output directory')
     cmd=[str(ROOT/'scripts/run.sh'),'flare_q6a/train.py','--physics','genesis','--envs',str(a.envs),
          '--steps',str(a.steps),'--iterations',str(a.iterations),'--output',str(out)]
-    cmd+=['--exp_name',a.exp_name]
+    cmd+=['--exp_name',a.exp_name,'--microbatch-size',str(a.microbatch_size)]
     if a.vis:cmd+=['--vis']
     if a.resume:cmd+=['--resume',str(Path(a.resume).resolve())]
     try:commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     except subprocess.CalledProcessError:commit=None
     manifest={'started_utc':utc(),'git_commit':commit,'command':cmd,'samples_requested':a.envs*a.steps*a.iterations,
-        'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'ppo_batch_realize':os.environ.get('RL_PPO_BATCH_REALIZE','0'),'npu':'not used by this training pipeline',
+        'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'ppo_batch_realize':os.environ.get('RL_PPO_BATCH_REALIZE','0'),'ppo_jit':os.environ.get('RL_PPO_JIT','0'),'npu':'not used by this training pipeline',
         'gpu_utilization':'DRM engine-time delta when available, otherwise null; frequency is not utilization'}
     write(out/'manifest.json',manifest)
     with (out/'training.log').open('a',buffering=1) as log, (out/'telemetry.jsonl').open('a',buffering=1) as tele:
