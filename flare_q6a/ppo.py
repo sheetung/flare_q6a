@@ -58,10 +58,31 @@ class PPO:
         self.batch_realize=os.environ.get('RL_PPO_BATCH_REALIZE','0')=='1'
         self.jit_enabled=os.environ.get('RL_PPO_JIT','0')=='1'
         self._chunk_runners={}
+        self.rollout_jit=os.environ.get('RL_ROLLOUT_JIT','0')=='1'
+        self._sample_runner=TinyJit(self._sample_compute) if self.rollout_jit else self._sample_compute
+        self.jit_adam=os.environ.get('RL_PPO_JIT_ADAM','0')=='1'
+        self._optimizer_runner=TinyJit(self._optimizer_compute) if self.jit_adam else self._optimizer_compute
         self.lr=cfg['learning_rate']
         self.opt=Adam(self.params,lr=self.lr,fused=False)
         self.rng=np.random.default_rng(seed)
         self.iteration,self.updates=0,0
+    def _sample_compute(self,obs,noise,*parameters):
+        mean,value=self.model.forward(obs)
+        sigma=self.model.std.detach()+Tensor.zeros(obs.shape[0],4)
+        action=(mean+noise*self.model.std).detach()
+        logp=self.model.logprob(action,mean).detach()
+        outputs=(action,logp,value.detach(),mean.detach(),sigma)
+        Tensor.realize(*outputs)
+        return outputs
+
+    def sample(self,obs,noise):
+        outputs=self._sample_runner(obs,noise,*self.params)
+        if not self.rollout_jit:return outputs
+        # Trajectory storage must not alias reusable JIT outputs.
+        owned=tuple(t.clone() for t in outputs)
+        Tensor.realize(*owned)
+        return owned
+
     def _chunk(self,batch,idx,n,size):
         keys=tuple(batch)
         def compute(index,*inputs):
@@ -81,6 +102,19 @@ class PPO:
         key=(keys,n,size,tuple(v.shape for v in batch.values()))
         if key not in self._chunk_runners:self._chunk_runners[key]=TinyJit(compute)
         return self._chunk_runners[key](idx,*batch.values(),*self.params)
+
+    def _optimizer_compute(self,*inputs):
+        for p,g in zip(self.params,inputs[:len(self.params)]):p.grad=g
+        norm=(sum(p.grad.square().sum() for p in self.params)+1e-12).sqrt()
+        factor=(self.cfg['max_grad_norm']/(norm+1e-6)).clip(0,1).realize()
+        if self.batch_realize:
+            for p in self.params:p.grad=p.grad*factor
+            Tensor.realize(*[p.grad for p in self.params])
+        else:
+            for p in self.params:p.grad=(p.grad*factor).realize()
+        norm.realize()
+        self.opt.step()
+        return (norm,*self.params,*self._optimizer_tensors().values())
 
     def update(self,batch,epochs=None,permutation=None,progress_callback=None):
         cfg=self.cfg;epochs=epochs or cfg['num_learning_epochs']
@@ -120,18 +154,14 @@ class PPO:
                     klval=float(metrics[4])
                     self.lr=adapt_lr(self.lr,klval,cfg)
                     self.opt.lr.assign([self.lr]).realize()
-                    norm=(sum(p.grad.square().sum() for p in self.params)+1e-12).sqrt()
-                    factor=(cfg['max_grad_norm']/(norm+1e-6)).clip(0,1).realize()
-                    if self.batch_realize:
-                        for p in self.params:p.grad=p.grad*factor
-                        Tensor.realize(*[p.grad for p in self.params])
-                    else:
-                        for p in self.params:p.grad=(p.grad*factor).realize()
-                    norm_value=float(norm.detach().item())
+                    if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
+                    # Explicit inputs prevent JIT from retaining old parameter,
+                    # learning-rate or optimizer-state buffers after assignment.
+                    result=self._optimizer_runner(*accumulated,*self.params,*self._optimizer_tensors().values())
+                    self.updates+=1
+                    norm_value=float(result[0].item())
                     if not math.isfinite(norm_value):
                         raise FloatingPointError(f'PPO invalid gradient norm: epoch={epoch+1}, minibatch={i+1}, size={size}, gradient_norm={norm_value}')
-                    if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
-                    self.opt.step();self.updates+=1
                     sigma=self.model.std.numpy()
                     if progress_callback:progress_callback('ppo_checked',epoch=epoch+1,minibatch=i+1,
                         minibatch_size=size,microbatch_size=self.microbatch_size,sigma=sigma.tolist(),

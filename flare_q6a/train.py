@@ -63,9 +63,13 @@ def main():
     else:env=CableEnv(args.envs)
     num_obs=env.obs().shape[1]
     model=ActorCritic(num_obs);trainer=PPO(model,cfg,microbatch_size=args.microbatch_size)
-    snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train}
+    snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train,
+              'execution':{'microbatch_size':trainer.microbatch_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware}}
     if args.physics=='genesis':snapshot.update(environment=env.source_config,task_signature=env.signature,random_initial_episode_ages=True)
     (out/'config.json').write_text(json.dumps(snapshot,indent=2))
+    print(f'GPU PPO: logical minibatch={args.envs*args.steps//cfg["num_mini_batches"]}, compute chunk={trainer.microbatch_size}, '
+          f'gradient JIT={trainer.jit_enabled}, Adam JIT={trainer.jit_adam}, rollout JIT={trainer.rollout_jit}, '
+          f'Adam updates/iteration={cfg["num_learning_epochs"]*cfg["num_mini_batches"]}',flush=True)
     loaded_meta=trainer.load(resume) if resume else {}
     obs=env.obs();started=time.perf_counter();history=[]
     first=trainer.params[0].numpy().copy()
@@ -88,11 +92,7 @@ def main():
         progress('rollout',iteration=trainer.iteration+1,step=0,steps=args.steps)
         with Context(TRAINING=0):
             for step in range(args.steps):
-                mean,value=model.forward(obs)
-                oldmean=mean.detach().realize()
-                oldsigma=(model.std.detach()+Tensor.zeros(args.envs,4)).realize()
-                action=(mean+Tensor.randn(args.envs,4)*model.std).detach().realize()
-                logp=model.logprob(action,mean).detach().realize();value=value.detach().realize()
+                action,logp,value,oldmean,oldsigma=trainer.sample(obs,Tensor.randn(args.envs,4).realize())
                 newobs,reward,done,timeout,terminal_obs=env.step(action)
                 logger.observe(reward,done,getattr(env,'last_step_info',None))
                 if step % 10 == 0:progress('rollout',iteration=trainer.iteration+1,step=step+1,steps=args.steps)
@@ -130,7 +130,8 @@ def main():
                  **stats)
         row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
         history.append(row)
-        run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':'flare_26','physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state()}
+        run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':'flare_26','physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state(),
+             'execution':{'microbatch_size':trainer.microbatch_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize}}
         if args.physics=='genesis':run.update(environment_config=env.source_config,task_signature=env.signature)
         if trainer.iteration % save_interval==0 or trainer.iteration==target_iteration:
             progress('checkpoint',iteration=trainer.iteration)
