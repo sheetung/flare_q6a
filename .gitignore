@@ -1,0 +1,15 @@
+.venv*/
+__pycache__/
+*.py[cod]
+.agents/
+.codex/
+.aws/
+.env
+.env.*
+*.npz
+*.npz.tmp
+*.safetensors*
+records/run_*/
+records/my_*/
+*.egg-info/
+.DS_Store

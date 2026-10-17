@@ -1,0 +1,17 @@
+Obtaining file:///home/radxa/Documents/rl_radxa/Genesis
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: genesis-world
+  Building editable for genesis-world (pyproject.toml): started
+  Building editable for genesis-world (pyproject.toml): finished with status 'done'
+  Created wheel for genesis-world: filename=genesis_world-0.2.1-0.editable-cp312-cp312-linux_aarch64.whl size=13809 sha256=d00d5b2f3dd79047a1582438b860a0c93f47279f2457465af1c7d2afd59c2895
+  Stored in directory: /tmp/pip-ephem-wheel-cache-8kk8h915/wheels/da/61/53/7b0ad3bcbb69a0cc5b9e070ac408808b7c4c0e181a340e2e53
+Successfully built genesis-world
+Installing collected packages: genesis-world
+Successfully installed genesis-world-0.2.1

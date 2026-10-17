@@ -1,0 +1,1 @@
+{"status": "PASS", "device": "CL", "checks": ["Gaussian log probability", "PPO clipped surrogate", "GAE reset boundary"]}

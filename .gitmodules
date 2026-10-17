@@ -1,0 +1,12 @@
+[submodule "Flare"]
+    ignore = untracked
+    path = Flare
+    url = https://github.com/BEI11HAI/Flare.git
+[submodule "Genesis"]
+    ignore = untracked
+    path = Genesis
+    url = https://github.com/Genesis-Embodied-AI/Genesis.git
+[submodule "rsl_rl_reference"]
+    ignore = untracked
+    path = rsl_rl_reference
+    url = https://github.com/leggedrobotics/rsl_rl.git

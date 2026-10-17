@@ -1,0 +1,1 @@
+{"status": "PASS", "device": "CL", "checks": ["100-step hover equilibrium", "vertical acceleration reference", "26D observations", "crash auto-reset"]}

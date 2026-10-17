@@ -1,0 +1,20 @@
+[
+  {
+    "iteration": 1,
+    "samples": 8,
+    "seconds": 13.978106855000078,
+    "loss": -0.08358314633369446,
+    "mean_bootstrapped_reward": -8.160242578014731e-05,
+    "resets": 0,
+    "device": "CL"
+  },
+  {
+    "iteration": 2,
+    "samples": 8,
+    "seconds": 2.3402197099999285,
+    "loss": -0.0772254690527916,
+    "mean_bootstrapped_reward": -0.00043587773689068854,
+    "resets": 0,
+    "device": "CL"
+  }
+]

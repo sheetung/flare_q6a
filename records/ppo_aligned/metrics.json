@@ -1,0 +1,17 @@
+[
+  {
+    "iteration": 1,
+    "samples": 8,
+    "seconds": 13.245785792999868,
+    "resets": 0,
+    "device": "CL",
+    "loss": -0.026146886870265007,
+    "policy_loss": -0.017044197767972946,
+    "value_loss": 0.0022465104120783508,
+    "entropy": 5.674599885940552,
+    "kl": 0.001085139811038971,
+    "learning_rate": 0.000675,
+    "updates": 2,
+    "discarded_samples": 0
+  }
+]
