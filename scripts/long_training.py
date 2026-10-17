@@ -44,7 +44,7 @@ def mirror_log(path,stop):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=DEFAULT_ENVS)
     ap.add_argument('--steps',type=int,default=train_config()['runner']['num_steps_per_env']);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS)
-    ap.add_argument('--microbatch-size',type=int,help='GPU compute chunk; default auto (100/128), preserves logical PPO minibatches')
+    ap.add_argument('--microbatch-size',type=int,help='GPU compute chunk; default auto (up to 4096), preserves logical PPO minibatches')
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600)
     ap.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
     ap.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')

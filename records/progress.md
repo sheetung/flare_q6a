@@ -311,3 +311,7 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 2026-10-17 关键索引瓶颈：固定tinygrad0.14 mixin/op.py的Tensor高级索引以及gather均通过one-hot mask和源行归约实现；PPO每个microbatch的8个字段会扫描整份rollout，随总样本数与块大小乘积增长。旧索引B512 micro4096第3轮停滞，已停止；内核15:55后确认多次lockup，见onehot_b512_gpu_stall_kernel.log，不能把其约87% GPU busy当稳定性/有效算力通过。旧运行status手工标记failed_kernel_lockup，前两轮仅时间基线。
 
 新增gpu_ops.take_rows，使用tinygrad UOp custom_kernel原生间接读取，保持GPU/JIT调度，输入rollout数据不需要梯度，不在CPU做gather。原型实机PASS：边界/重复索引、1D/2D/3D、float32位模式（含负零/NaN）、JIT新输入与历史输出独立；固定4096×26输出，源行1024到51200（50倍）耗时约10.26到11.64ms，不再全扫描。下一步优化线程组和完成完整PPO数值/实际训练回归。
+
+2026-10-17 原生索引线程组优化：原型每线程组1lane效率低，改为128线程组与有界索引valid mask；中间STORE gate版本被tinygrad memory_coalescing拒绝，未执行GPU，改成index.valid后功能全PASS。固定4096×26输出，源1024/51200行实测约0.950/1.714ms，较原型10.26/11.64ms显著改善。native原B16×100 minibatch400/5epochs/20更新对照PASS4.775e-7；原FLARE逻辑minibatch51200、总204800样本、micro4096、1epoch/4更新对照PASS4.150e-6，含Adam状态/全局裁剪/自适应KL，GPU冷启动update12.824s。
+
+同B512场景/种子/4k块、只改GPU索引的实测进行中：native前两轮33.444/21.990s（1530.9/2328.4 samples/s）；第一轮原始奖励与旧索引完全相同，第二轮仅约2e-9差异。旧索引前两轮124.337/108.801s且第3轮驱动故障，作为时间对照不作稳定性基线。将训练auto块改为min(逻辑minibatch,4096)，推理最大1024，原B16命令将自动整批400而非强制小块。默认并行数及JIT开关暂未切换，待最终性能/稳定性验证。

@@ -21,7 +21,7 @@ def main():
     p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
     p.add_argument('--minibatches',type=int)
-    p.add_argument('--microbatch-size',type=int,help='GPU compute chunk; auto: 128 if logical minibatch divisible by 128, otherwise 100')
+    p.add_argument('--microbatch-size',type=int,help='GPU compute chunk; auto: min(logical minibatch, 4096), PPO update count unchanged')
     p.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>')
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
@@ -48,7 +48,7 @@ def main():
     cfg['timeout_bootstrap']=args.timeout_bootstrap
     assert cfg['num_learning_epochs']>0 and 0<cfg['num_mini_batches']<=args.envs*args.steps
     logical_size=args.envs*args.steps//cfg['num_mini_batches']
-    compute_chunk=args.microbatch_size if args.microbatch_size is not None else (128 if logical_size%128==0 else 100)
+    compute_chunk=args.microbatch_size if args.microbatch_size is not None else min(4096,logical_size)
     if not 1<=compute_chunk<=4096:p.error('--microbatch-size must be between 1 and 4096')
     # Validate checkpoint mode before expensive scene construction.
     if resume:
@@ -69,7 +69,7 @@ def main():
     host_dispatch=configure_main_cpu()
     print(f'Host dispatch: {host_dispatch}',flush=True)
     snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train,
-              'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware,'host_dispatch':host_dispatch}}
+              'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'row_lookup':'native_opencl_index_load','jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware,'host_dispatch':host_dispatch}}
     if args.physics=='genesis':snapshot.update(environment=env.source_config,task_signature=env.signature,random_initial_episode_ages=True)
     (out/'config.json').write_text(json.dumps(snapshot,indent=2))
     print(f'GPU PPO: logical minibatch={args.envs*args.steps//cfg["num_mini_batches"]}, compute chunk={trainer.microbatch_size}, '
@@ -136,7 +136,7 @@ def main():
         row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
         history.append(row)
         run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':'flare_26','physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state(),
-             'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'host_dispatch':host_dispatch}}
+             'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'row_lookup':'native_opencl_index_load','jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'host_dispatch':host_dispatch}}
         if args.physics=='genesis':run.update(environment_config=env.source_config,task_signature=env.signature)
         if trainer.iteration % save_interval==0 or trainer.iteration==target_iteration:
             progress('checkpoint',iteration=trainer.iteration)

@@ -42,7 +42,9 @@ original_randperm=torch.randperm
 torch.randperm=lambda *a,**kw:torch.tensor(perm,device=kw.get('device','cpu'))
 try:ref.update()
 finally:torch.randperm=original_randperm
+gpu_started=time.perf_counter()
 stats=t.update(batch,permutation=perm)
+gpu_update_seconds=time.perf_counter()-gpu_started
 parammax=0.
 for source,target in [(m.actor,r.actor),(m.critic,r.critic)]:
     for i,l in enumerate(source):
@@ -71,5 +73,5 @@ assert t.updates==args.epochs*4
 print(json.dumps({'status':'PASS','reference':'actual rsl_rl v1.0.2 CPU test-only',
     'training_device':'CL','jit':t.jit_enabled,'jit_adam':t.jit_adam,'batch_realize':t.batch_realize,'samples':args.samples,'logical_minibatch_size':args.samples//4,
     'microbatch_size':args.microbatch_size,'epochs':args.epochs,'adam_updates':t.updates,
-    'parameter_max_absolute_error':parammax,'seconds':time.perf_counter()-started,
+    'parameter_max_absolute_error':parammax,'seconds':time.perf_counter()-started,'gpu_update_seconds_cold':gpu_update_seconds,
     'checks':['weighted gradient accumulation','global gradient clipping','Adam moments','adaptive KL','unchanged Adam update count']}))

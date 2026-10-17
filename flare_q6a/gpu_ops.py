@@ -5,14 +5,17 @@ reduction over every source row. This kernel performs one indexed load per
 output element and participates in tinygrad scheduling/JIT capture.
 """
 from tinygrad import Tensor,dtypes
-from tinygrad.uop.ops import UOp,KernelInfo
+from tinygrad.uop.ops import UOp,KernelInfo,AxisType
 
 def _take_rows_kernel(out:UOp,source:UOp,index:UOp):
     width=source.numel()//source.shape[0]
-    i=UOp.range(out.numel(),0)
+    group=UOp.range((out.numel()+127)//128,0,AxisType.GLOBAL)
+    lane=UOp.range(128,1,AxisType.LOCAL)
+    raw=group*128+lane
+    i=raw.minimum(out.numel()-1)
     row=index.flatten().index(i//width).load().cast(dtypes.weakint)
     value=source.flatten().index(row*width+i%width).load()
-    return out.flatten().index(i).store(value).end(i).sink(arg=KernelInfo(name='ppo_take_rows',opts_to_apply=()))
+    return out.flatten().index(raw.valid(raw<out.numel())).store(value).end(group,lane).sink(arg=KernelInfo(name='ppo_take_rows',opts_to_apply=()))
 
 def take_rows(source:Tensor,index:Tensor):
     """Select nonnegative in-bounds row indices; no gradient to rollout data."""
