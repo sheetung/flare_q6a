@@ -22,4 +22,4 @@ reward:
   swing: -0.5
   tilt: -0.1
   action_change: -0.02
-  crash: -5.0
+  crash: -1.0

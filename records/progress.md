@@ -267,3 +267,5 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 根因：Genesis _kernel_forward_kinematics_links_geoms 的 ndarray for 循环使用了索引而非传入的环境ID；部分重置时新环境的分开 set_pos/set_quat/set_dofs_position 路径又会从陈旧 dofs_state.pos 重建根 qpos，并返回陈旧负载状态。改为所选环境完整 qpos 原子写入、清零广义速度，再全连续环境索引刷新 FK。未改上游子模块、奖励、探索噪声或内环增益，以保持因果对照。reset_version=2 阻止旧错误环境配置续训，建议从头训练。
 
 回归PASS：16环境非连续ID [15]、奇数ID及[0,15]重置后无人机/负载位置和速度正确，未重置环境qpos/速度保持不变；见 rigid_hover_partial_reset_checks.log。同动作种子123、初始种子1的300步修复前后前104步最大指标差0，均105步首次失败；修复后32次失败、0次一步回合、完成回合平均117.75步。详见 rigid_hover_reset_comparison.json；完整原始轨迹保留在忽略的 records/run_reset_diagnosis/。没有启动新的长期训练，尚未验证新策略收敛。
+
+2026-10-17：按用户要求将 rigid_hover 的失败惩罚从 -5.0 降到 -1.0（仍不乘 dt）；其他奖励、物理参数和终止条件保持不变。配置差异检查通过。用户将从头重新训练，已有运行进程不会热加载此修改；旧奖励配置检查点续训会被环境配置一致性检查拒绝。
