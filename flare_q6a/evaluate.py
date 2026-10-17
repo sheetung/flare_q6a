@@ -77,7 +77,7 @@ def main():
     unchanged=all(np.array_equal(before[k],v.numpy()) for k,v in get_state_dict(model).items());assert unchanged
     result=dict(status='PASS',scope='frozen policy GPU evaluation; not a convergence certificate',
         experiment=a.exp_name,mode=a.mode,checkpoint_iteration=meta.get('iteration'),checkpoint_sha256=sha,
-        seed=a.seed,steps=step+1,seconds=time.perf_counter()-started,weights_unchanged=unchanged,**metrics.summary())
+        seed=a.seed,steps=step+1,episode_horizon_seconds=limit*dt,test_episode_steps=a.test_episode_steps,seconds=time.perf_counter()-started,weights_unchanged=unchanged,**metrics.summary())
     if a.episodes and not result['requested_episodes_complete']:result['status']='INCOMPLETE'
     if a.test_episode_steps:assert result['safe_full_duration_episodes']>0,'timeout path not exercised'
     (out/'evaluation.json').write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2),flush=True)

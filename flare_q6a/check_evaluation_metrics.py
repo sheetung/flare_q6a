@@ -10,7 +10,7 @@ m.observe([2,4],[True,True],[False,True],info([2,4],[True,False]),np.zeros((2,4)
 r=m.summary();assert r['completed_episodes']==3 and r['requested_episodes_complete']
 assert r['failures']==2 and r['safe_full_duration_episodes']==1 and r['evaluated_samples']==4
 assert r['mean_payload_error_m']==2.5
-assert r['mean_waypoint_hits']==.5
+assert r['mean_waypoint_hits']==.5 and r['waypoints_reached']==2
 assert abs(r['mean_episode_seconds']-.04/3)<1e-9
 m.observe([99,99],[True,True],[True,True],info([99,99],[False,False]),np.ones((2,4))*2)
 assert m.summary()['completed_episodes']==3 and m.summary()['evaluated_samples']==4

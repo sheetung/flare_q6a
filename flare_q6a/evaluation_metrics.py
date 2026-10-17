@@ -23,6 +23,7 @@ class EvaluationMetrics:
                      causes=[k for k,v in info.get('causes',{}).items() if np.asarray(v)[i]])
             row.update({'mean_'+k:float(v[i]/self.length[i]) for k,v in self.sums.items()})
             row.update({'peak_'+k:float(v[i]) for k,v in self.peaks.items() if k in ('swing_deg','rod_length_error_m')})
+            if 'waypoint_hits' in self.sums:row['waypoints_reached']=int(round(self.sums['waypoint_hits'][i]))
             self.rows.append(row);new.append(row);self.completed[i]+=1;self.length[i]=0;self.returns[i]=0
             for v in self.sums.values():v[i]=0
             for v in self.peaks.values():v[i]=0
@@ -43,8 +44,9 @@ class EvaluationMetrics:
             action_clip_fraction=self.clipped/max(1,self.action_components),
             termination_causes={k:sum(k in r['causes'] for r in rows) for k in sorted({k for r in rows for k in r['causes']})},
             partial_episodes=partial,
-            note='Task means are step-weighted over completed episodes; partial episodes are censored. Safe full duration alone does not establish precise hover.')
+            note='Task means are step-weighted over completed episodes; partial episodes are censored. Safe full duration alone does not establish waypoint tracking performance.')
         for key in self.sums:
             result['mean_'+key]=sum(r.get('mean_'+key,0)*r['steps'] for r in rows)/steps if steps else None
+        result['waypoints_reached']=sum(r.get('waypoints_reached',0) for r in rows)
         if rows and any('peak_swing_deg' in r for r in rows):result['peak_swing_deg']=max(r.get('peak_swing_deg',0) for r in rows)
         return result
