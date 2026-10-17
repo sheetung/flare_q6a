@@ -7,6 +7,7 @@ from tinygrad import Tensor,Device,Context
 from tinygrad.nn.state import get_state_dict
 from env import CableEnv,ROOT
 from ppo import ActorCritic,PPO
+from metrics import ExperimentLogger
 
 def main():
     faulthandler.enable()
@@ -45,12 +46,23 @@ def main():
         env=GenesisBridge(args.envs)
     else:env=CableEnv(args.envs)
     model=ActorCritic();trainer=PPO(model,cfg)
-    if resume:trainer.load(resume)
+    loaded_meta=trainer.load(resume) if resume else {}
     obs=env.obs();started=time.perf_counter();history=[]
     first=trainer.params[0].numpy().copy()
     setup_seconds=started-setup_start
+    logger_state=loaded_meta.get('run',{}).get('logger',{})
+    initial_samples=logger_state.get('total_samples',trainer.iteration*args.envs*args.steps)
+    initial_time=logger_state.get('total_time',0.)
+    if resume and not logger_state:
+        try:
+            old_rows=json.loads((resume.parent/'metrics.json').read_text())
+            initial_time=sum(r['seconds'] for r in old_rows if r['iteration']<=trainer.iteration)
+        except (OSError,ValueError,KeyError):pass
+    logger=ExperimentLogger(out,args.envs,.01,trainer.iteration+args.iterations,initial_samples,initial_time)
+    logger.restore_episodes(logger_state)
+    print('Logging: completed-episode window=100; waypoint counts are not episode success rates; termination reasons may overlap.',flush=True)
     for _ in range(args.iterations):
-        ts=time.perf_counter();roll=[];raw_rewards=[]
+        ts=time.perf_counter();roll=[];logger.begin_iteration()
         progress('rollout',iteration=trainer.iteration+1,step=0,steps=args.steps)
         with Context(TRAINING=0):
             for step in range(args.steps):
@@ -60,13 +72,14 @@ def main():
                 action=(mean+Tensor.randn(args.envs,4)*model.std).detach().realize()
                 logp=model.logprob(action,mean).detach().realize();value=value.detach().realize()
                 newobs,reward,done,timeout,terminal_obs=env.step(action)
-                raw_rewards.append(reward.detach().realize())
+                logger.observe(reward,done,getattr(env,'last_step_info',None))
                 if step % 10 == 0:progress('rollout',iteration=trainer.iteration+1,step=step+1,steps=args.steps)
                 if args.timeout_bootstrap=='terminal':
                     _,boot=model.forward(terminal_obs);boot=boot.detach()
                 else:boot=value # exact rsl_rl v1.0.2 process_env_step convention
                 reward=(reward+cfg['gamma']*timeout.float()*boot).realize()
                 roll.append((obs,action,logp,value,reward,done,oldmean,oldsigma));obs=newobs
+            collection_end=time.perf_counter()
             _,nv=model.forward(obs);nv=nv.detach().realize();adv=Tensor.zeros(args.envs)
             advantages=[];returns=[]
             for item in reversed(roll):
@@ -85,12 +98,14 @@ def main():
         assert np.isfinite(obs.numpy()).all()
         row=dict(iteration=trainer.iteration,samples=args.envs*args.steps,seconds=time.perf_counter()-ts,
                  resets=int(flatten(5).float().sum().item()),device='CL',
-                 mean_raw_reward=float(Tensor.stack(*raw_rewards).mean().item()),**stats)
-        history.append(row);print(json.dumps(row),flush=True)
-        run={'physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset'}
+                 **stats)
+        row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
+        history.append(row)
+        run={'physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state()}
         progress('checkpoint',iteration=trainer.iteration)
         trainer.save(out/'checkpoint.npz',run)
         (out/'metrics.json').write_text(json.dumps(history,indent=2))
+    logger.close()
     np.savez(out/'model.npz',**{k:v.numpy() for k,v in get_state_dict(model).items()})
     delta=float(np.abs(trainer.params[0].numpy()-first).max());assert delta>0
     result=dict(status='PASS',scope=args.physics+' PPO training smoke; convergence unverified',max_weight_change=delta,

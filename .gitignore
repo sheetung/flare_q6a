@@ -13,3 +13,4 @@ records/run_*/
 records/my_*/
 *.egg-info/
 .DS_Store
+events.out.tfevents.*

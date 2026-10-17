@@ -38,6 +38,7 @@ gs_misc._matrix_to_ext_arr_fast=gstaichi._kernels.matrix_to_ext_arr
 import yaml
 from tinygrad import Tensor
 from envs.scenario1_env import HoverEnv
+from metrics import FlareMetricsTap
 from genesis.utils.geom import quat_to_R
 import utils.mixer as mixer
 
@@ -69,6 +70,8 @@ class GenesisBridge:
                 self._terminal_obs=self._buffer_obs().clone()
             original_reset(indices)
         self.env.reset_idx=capture_reset
+        self.metrics_tap=FlareMetricsTap(self.env)
+        self.last_step_info={}
     def _buffer_obs(self):
         e=self.env;sc=e.obs_scales
         return torch.cat([
@@ -85,7 +88,9 @@ class GenesisBridge:
         return Tensor(self.env.get_observations().numpy().copy(),device='CL')
     def step(self,action):
         self._terminal_obs=None
+        self.metrics_tap.begin_step()
         obs,_,reward,done,info=self.env.step(torch.from_numpy(action.numpy().copy()))
+        self.last_step_info=self.metrics_tap.finish(reward,done)
         out=Tensor(obs.numpy().copy(),device='CL')
         terminal=out if self._terminal_obs is None else Tensor(self._terminal_obs.numpy().copy(),device='CL')
         timeout=(info['time_outs'].bool() & ~self.env.crash_condition)

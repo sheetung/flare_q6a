@@ -221,3 +221,19 @@ train.py 增加 rollout/update/checkpoint 阶段进度文件与原始奖励均�
 04:17:29 UTC 的 5 秒采样窗口：GPU 进程引擎占用约 33.36%、812 MHz、RSS 约 1.15 GiB。原实验 01 服务已确认 inactive/dead，02 active/running。
 
 已把默认训练采样调整到当前已推进的 8×32/minibatch64，并在 README 标明较大批次锁死问题；仍需长期验证。当前服务通过显式参数运行，默认值调整不改变它的配置。最新入口及文件位置见 records/active_training.md。
+
+## FLARE 风格日志补齐
+
+用户要求日志输出原版 FLARE 式有用指标。新增 metrics.py：
+
+- 非侵入式观察 `_at_target`、reward 函数和 reset 前状态；不修改奖励、动作或目标切换。
+- 输出最近 100 个完整回合的回报、长度和奖励分项；同时保留每步奖励分项，单位为原版权重×dt 后的实际值。
+- 航点到达计数、无人机/负载误差、世界竖直摆角、原版绳/机体夹角、failure/timeout-only 和可重叠的终止原因。
+- 原版风格每轮文本、FPS、collection/learning time、KL、noise std、ETA、TensorBoard 及 metrics.jsonl。
+- CPU 记账测试 PASS：episode 边界、加权分解、reset 前原因、观察 tap 保持状态/输出不变、TensorBoard scalar 值。
+- 日志 Mean episode reward 用完整回合累计值；明确区别于每步奖励，以及原版 extras 按固定 15 秒归一化的数值。
+- 使用下一次检查点切换新版本；保留旧日志和优化器状态，仿真按已有实用续训语义 fresh reset。
+
+日志集成检查 PASS：原版 Genesis 8 步、2 环境，强制 3 步超时回合，共 4 个完成回合；六项加权奖励之和等于环境返回值；位置/摆角为 reset 前有限值；完整回合长度统计为 3 步；无需修改 PPO 算法。见 genesis_metrics_checks.log。
+
+旧长训练 02 在第 49 轮 / 980 次更新的完整检查点保存后停止。新长训练 03 将恢复该检查点，追加 451 轮至总第 500 轮；网络、Adam、学习率和迭代数保留，环境 fresh reset，日志窗口从新进程开始积累（旧日志没有完整回合信息，不能补造）。

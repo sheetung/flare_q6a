@@ -197,3 +197,25 @@ python3 scripts/training_status.py --output records/run_long_20261017_01 --watch
 当前 Q6A/Mesa 25.2.8 实测发现：8 环境 × 100 步、4 minibatches（每批 200）在首轮 PPO 更新触发 RustiCL GPU lockup。减至每批 64 的配置已完成多轮并保存检查点，但完整长训练仍在验证；不能把小测试 PASS 视为任意批次配置都稳定。默认采样规模已调整为 8×32。
 
 监督器支持 `--stall-timeout`（秒，默认 600；0 禁用），根据训练阶段进度判断停滞。超时会转储 Python 栈并结束实验，保留失败状态和最后已完成轮次的检查点，不会自动重启或回退 CPU。
+
+## FLARE 风格训练日志与 TensorBoard
+
+`training.log` 每轮输出可读块：采样/学习耗时、FPS、value/surrogate loss、KL、学习率、动作噪声、最近 100 个完整回合的平均回报和长度、六项奖励分解、航点到达数、无人机/负载位置误差、绳摆角、终止原因、总步数和 ETA。
+
+结构化指标同时保存到 `metrics.jsonl` 和 `metrics.json`，TensorBoard 写入运行目录的 `tensorboard/`：
+
+```bash
+.venv-gpu/bin/tensorboard --logdir records/run_long_20261017_03/tensorboard --host 127.0.0.1 --port 6006
+```
+
+日志定义：
+
+- `Mean reward` 是最近 100 个**完整回合的原始奖励总和**，与 `Mean reward per step` 区分；不含 PPO 超时 value 补偿。
+- 奖励分项包含原始 FLARE 权重与 dt；相加对应环境实际返回的奖励。完整回合分项是累计值，不是原版 extras 中按固定 15 秒除算的值。
+- 航点到达计数严格来自原版 `_at_target()`，没有把重置或存活当成成功率。
+- 位置误差、摆角和终止原因在 reset 前取样，避免被重置后的零值或初始位置污染。
+- `Swing from vertical` 是绳与世界竖直向下的夹角；`rope/body angle` 是原版安全约束使用的绳/机体夹角。
+- `Crash` 包括越界、触地和摆角等原版 failure 条件；多个终止原因可同时出现。`timeout-only` 不含同时 failure 的回合。
+- 这些是带探索噪声的训练指标，不替代固定任务、确定性策略的独立评估。
+
+日志测试：`scripts/run.sh flare_q6a/check_metrics.py`（仅 CPU 记账测试）；`scripts/run.sh flare_q6a/check_genesis_metrics.py`（使用原版 GPU 仿真，应在没有其他训练竞争 GPU 时运行）。
