@@ -181,6 +181,8 @@ scripts/run.sh scripts/long_training.py \
 
 省略 `--output` 时自动创建 `records/run_<UTC时间戳>`，并打印完整目录；也可用 `--output` 指定目录。
 
+训练日志会实时显示在启动终端，同时保存到 `training.log`。
+
 监督器输出 `status.json`、`manifest.json`、`telemetry.jsonl` 和 `latest_telemetry.json`；训练输出 `training.log`、`progress.json`、指标及检查点。`status.json` 记录训练 PID 和完成/失败状态；`manifest.json` 记录 Git commit 与完整命令。
 
 GPU 占用仅在内核提供 DRM engine-time 计数器时计算，否则为 null；GPU 频率单独记录，不能替代百分比。NPU 未用于训练，NPU 百分比为 null，不能伪记为已测 0%。CPU 百分比同时记录单核 100% 基准和整机容量基准。温度包含所有可读 thermal zone，最大值不一定是 GPU 温度。

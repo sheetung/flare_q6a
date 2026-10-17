@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Supervise one bounded training run and persist resource telemetry."""
-import argparse,json,os,subprocess,time,signal
+import argparse,json,os,subprocess,time,signal,sys,threading
 from datetime import datetime,timezone
 from pathlib import Path
 import psutil
@@ -27,6 +27,18 @@ def drm(pid):
         if engines:clients[client]=engines
     return clients
 
+def mirror_log(path,stop):
+    """Follow the saved log without delaying resource sampling or child output."""
+    with path.open('r') as source:
+        while True:
+            chunk=source.read(8192)
+            if chunk:
+                try:
+                    sys.stdout.write(chunk);sys.stdout.flush()
+                except (BrokenPipeError,OSError):return
+            elif stop.is_set():return
+            else:stop.wait(0.1)
+
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('--envs',type=int,default=8)
     ap.add_argument('--steps',type=int,default=32);ap.add_argument('--iterations',type=int,default=500)
@@ -46,6 +58,9 @@ def main():
     write(out/'manifest.json',manifest)
     with (out/'training.log').open('a',buffering=1) as log, (out/'telemetry.jsonl').open('a',buffering=1) as tele:
         child=subprocess.Popen(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
+        mirror_stop=threading.Event()
+        mirror=threading.Thread(target=mirror_log,args=(out/'training.log',mirror_stop),daemon=True)
+        mirror.start()
         proc=psutil.Process(child.pid);proc.cpu_percent()
         status={'state':'running','training_pid':child.pid,'supervisor_pid':os.getpid(),**manifest}
         write(out/'status.json',status);previous={};prev_time=time.monotonic();last_progress=None;last_stamp=None;last_advance=time.monotonic()
@@ -100,4 +115,6 @@ def main():
             status.update(state='supervisor_error',error=repr(exc),updated_utc=utc());write(out/'status.json',status)
             if child.poll() is None:child.terminate();child.wait(timeout=30)
             raise
+        finally:
+            mirror_stop.set();mirror.join(timeout=2)
 if __name__=='__main__':raise SystemExit(main())
