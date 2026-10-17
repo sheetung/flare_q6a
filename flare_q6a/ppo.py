@@ -53,6 +53,7 @@ class PPO:
         self.model,self.cfg=model,dict(cfg)
         self.params=get_parameters(model)
         assert all(p.device.startswith('CL') for p in self.params)
+        self.batch_realize=os.environ.get('RL_PPO_BATCH_REALIZE','0')=='1'
         self.lr=cfg['learning_rate']
         self.opt=Adam(self.params,lr=self.lr,fused=False)
         self.rng=np.random.default_rng(seed)
@@ -81,10 +82,17 @@ class PPO:
                     total.backward()
                     norm=(sum(p.grad.square().sum() for p in self.params)+1e-12).sqrt()
                     factor=(cfg['max_grad_norm']/(norm+1e-6)).clip(0,1).realize()
-                    for p in self.params:p.grad=(p.grad*factor).realize()
+                    if self.batch_realize:
+                        for p in self.params:p.grad=p.grad*factor
+                        Tensor.realize(*[p.grad for p in self.params])
+                    else:
+                        for p in self.params:p.grad=(p.grad*factor).realize()
                     if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
                     self.opt.step();self.updates+=1
-                    stats.append([float(t.detach().item()) for t in (total,policy,vl,entropy)]+[klval])
+                    if self.batch_realize:
+                        stats.append(Tensor.stack(*[t.detach() for t in (total,policy,vl,entropy)]).numpy().astype(float).tolist()+[klval])
+                    else:
+                        stats.append([float(t.detach().item()) for t in (total,policy,vl,entropy)]+[klval])
         values=np.asarray(stats);assert np.isfinite(values).all()
         assert np.isfinite(self.model.std.numpy()).all() and (self.model.std.numpy()>0).all(), 'non-positive policy sigma'
         self.iteration+=1

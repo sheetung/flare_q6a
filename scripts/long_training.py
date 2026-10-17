@@ -58,7 +58,7 @@ def main():
     try:commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     except subprocess.CalledProcessError:commit=None
     manifest={'started_utc':utc(),'git_commit':commit,'command':cmd,'samples_requested':a.envs*a.steps*a.iterations,
-        'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'npu':'not used by this training pipeline',
+        'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'ppo_batch_realize':os.environ.get('RL_PPO_BATCH_REALIZE','0'),'npu':'not used by this training pipeline',
         'gpu_utilization':'DRM engine-time delta when available, otherwise null; frequency is not utilization'}
     write(out/'manifest.json',manifest)
     with (out/'training.log').open('a',buffering=1) as log, (out/'telemetry.jsonl').open('a',buffering=1) as tele:

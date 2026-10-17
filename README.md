@@ -235,3 +235,16 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 8 --max_iterat
 ```
 
 请只运行一个训练任务。`-v` 需要图形显示环境，窗口接入原版 HoverEnv 的 show_viewer 和 visualize_target。高通桌面窗口的实际显示效果仍需运行验证；无显示环境会明确报错。为避免已发现的 GPU 锁死，默认保持 8 环境、32 步，而非原版 2048 环境；监督器默认 500 轮，直接 train.py 默认 3 轮。--max_iterations 与 --iterations 在续训时均表示追加轮数。上游 Flare 子模块保持原样；勿直接运行其中依赖 CUDA 的训练入口。
+
+## Q6A GPU 吞吐实测（2026-10-17）
+
+`RL_PPO_BATCH_REALIZE=1` 启用 PPO 梯度批量提交与统计值合并读取，减少独立调度和读取次数；默认仍关闭，可进行对照。该优化已通过 rsl_rl v1.0.2 数值、梯度、参数更新和续训一致性检查。短测中 16 环境、32 步、4 minibatch（每批 128）去掉首轮后约 10.03 样本/秒，原 8 环境约 6.00。平均进程 DRM GPU engine 占用约从 44% 提高到 63%。不同配置也改变采样规模，不能据此推断收敛更快。
+
+```bash
+RL_PPO_BATCH_REALIZE=1 scripts/run.sh scripts/long_training.py \
+  -B 16 --steps 32 --max_iterations 500 --stall-timeout 180
+```
+
+这是短测候选配置，尚未验证长时稳定性和收敛。32 环境 × 32 步 / 4 minibatch（每批 256）实测触发内核 GPU lockup，已停止；此前每批 200 也失败，当前不要直接放大 minibatch。保留默认 8 环境，未自动开启长训练。
+
+性能记录见 `records/gpu_benchmark_results.json`、`records/gpu_batch_parity.log`、`records/gpu_benchmark_kernel_error.txt`。可用 `python3 scripts/benchmark_report.py records/<运行目录>` 重新统计。DRM 计数器短窗口可能因延迟结算超过 100%，不能当成真实满载；报告保留原始异常，使用较长窗口和吞吐比较，不将百分比截断伪装成满载。阶段归属仅为监控采样时的进度，并非精确 GPU profiler。
