@@ -56,6 +56,10 @@ class GenesisBridge:
         import os
         if show_viewer and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
             raise RuntimeError('-v requires a desktop display; run from a graphical desktop terminal')
+        thread_limit=os.environ.get('RL_TORCH_THREADS')
+        if thread_limit is not None:
+            if int(thread_limit)<1:raise ValueError('RL_TORCH_THREADS must be positive')
+            torch.set_num_threads(int(thread_limit))
         os.chdir(ROOT/'Flare')
         print('phase: Genesis Vulkan init',flush=True)
         gs.init(backend=gs.vulkan,logging_level='warning')

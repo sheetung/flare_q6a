@@ -1,6 +1,6 @@
 # FLARE on Qualcomm：刚性吊挂航点跟踪
 
-当前任务是原 FLARE Scenario 1 航点跟踪，替换为独立的单段刚性吊挂模型，降低并行环境数；自定义 rigid_hover 悬停环境及其19维输入、奖励配置已经删除，历史记录保留在 Git 与 records 中。
+当前任务是原 FLARE Scenario 1 航点跟踪，替换为独立的单段刚性吊挂模型；经过GPU执行适配，刚性任务默认支持原版2048并行，仍可用-B降低；自定义 rigid_hover 悬停环境及其19维输入、奖励配置已经删除，历史记录保留在 Git 与 records 中。
 
 已验证硬件平台：Radxa Dragon Q6A / Ubuntu 24.04 ARM64 / Python 3.12 / Adreno 643。Vulkan物理和OpenCL PPO在GPU运行；原FLARE观测、奖励、PID/mixer和跨框架数据搬运使用CPU。NPU未接入，代码不连接PX4或发送实飞指令。其他高通板必须重新验证真实GPU驱动与数值/物理测试。
 
@@ -8,10 +8,11 @@
 
 | 项目 | 原版 | 当前默认 |
 |---|---|---|
-| 并行环境 | 2048 | **4** |
+| 并行环境 | 2048 | **2048（刚性实测档）** |
 | 每环境采样步数 | 100 | **100，读取原YAML** |
 | epochs / minibatches | 5 / 4 | 相同 |
-| 每个 minibatch 样本数 | 51200 | 100 |
+| 每个逻辑 minibatch 样本数 | 51200 | 51200 |
+| GPU计算块 | 原CUDA实现 | 最多4096，整批统一裁剪/KL/Adam |
 | 观测 / 动作 | 26 / 4 | 相同 |
 | Actor/Critic | [128,128] Tanh | 相同 |
 | 学习率、KL、gamma、lambda、噪声 | 原YAML | 相同 |
@@ -24,7 +25,7 @@
 
 奖励使用原六项和原权重：target=10、smooth=-0.0001、yaw=0.01、angular=-0.0002、crash=-10、cable_angle_safety=0.03；全部按原逻辑乘dt=0.01，失败实际扣0.1，没有悬停版的-1/-5惩罚。原角速度PID、混控、RPM换算、100Hz及内部2子步保持不变，不套用已删除悬停环境的控制器或逐子步推力补偿。
 
-高通后端仍需GsTaichi兼容层与tinygrad PPO移植，不能在本机直接使用原CUDA训练器。原PPO移植已做rsl_rl v1.0.2数值对照。刚性环境 `rigid_waypoint_env.py` 从固定上游源码派生；AST检查确保除构造和重置外全部方法一致。部分重置采用完整qpos写入和全连续ID运动学刷新，绕过已确认的旧Genesis部分ID刷新缺陷。上游子模块不改写。
+高通后端仍需GsTaichi兼容层与tinygrad PPO移植，不能在本机直接使用原CUDA训练器。原PPO移植已做rsl_rl v1.0.2数值对照，含原版51200样本逻辑minibatch。GPU行索引采用原生间接读取，避免tinygrad默认one-hot全扫描；参数/梯度缓冲独立物化，配合JIT复用执行图。刚性环境 `rigid_waypoint_env.py` 从固定上游源码派生；AST检查确保除构造和重置外全部方法一致。部分重置采用完整qpos写入和全连续ID运动学刷新，绕过已确认的旧Genesis部分ID刷新缺陷。上游子模块不改写。
 
 ## 固定上游版本
 
@@ -82,6 +83,9 @@ scripts/run.sh flare_q6a/hardware.py
 scripts/run.sh flare_q6a/check_waypoint_alignment.py
 scripts/run.sh flare_q6a/check_waypoint_alignment.py --physics
 scripts/run.sh flare_q6a/check_parity.py
+scripts/run.sh flare_q6a/check_gpu_ops.py
+scripts/run.sh flare_q6a/check_microbatch.py --samples 1600 --microbatch-size 400 --epochs 5
+scripts/run.sh flare_q6a/check_rollout_jit.py --envs 1025 --microbatch-size 4096
 ```
 
 对齐检查涵盖原函数AST、环境配置、质量与拓扑；物理检查涵盖26维观测、奖励分解、刚性长度、部分环境重置、目标切换和超时。PPO参考检查使用CPU PyTorch作数值参考，待测PPO仍在OpenCL GPU上执行。测试PASS不代表收敛。
@@ -90,27 +94,39 @@ scripts/run.sh flare_q6a/check_parity.py
 
 ```bash
 cd /home/radxa/Documents/rl_radxa
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 4
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid
 ```
 
-默认800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v`，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
+默认2048并行、800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v` 并调小-B；大规模性能测试均为headless，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
 
-**不要沿用旧的 -B 16 --steps 32 命令**。本板已出现minibatch200/256/400的GPU锁死；保留100步和4minibatches时默认4环境，对应100样本/批。当前入口在场景构建前拒绝minibatch≥200，避免重复触发已知故障；低于200不代表均已验证。增大-B需先测试。并行降低512倍意味着相同轮数的样本量也降低512倍，不能承诺与桌面原版同轮数收敛。
+采样保留原版100步。早期B4限制属于旧执行图/索引路径的故障边界，不是Adreno的并行硬件上限。新适配支持大逻辑minibatch：计算块自动取 `min(逻辑minibatch,4096)`，完整minibatch累积后才统一裁剪梯度、按完整KL调节学习率、执行一次Adam；仍然每轮5×4=20次更新。`-B 16` 对应400样本整批，已通过20次更新的原版数值对照。可用 `--microbatch-size` 显式覆盖计算块，不等同于修改 `--minibatches`。不同并行数每轮样本量不同，轮数不能直接比较收敛。
 
 短测试：
 
 ```bash
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 4 --max_iterations 2
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 16 --max_iterations 2
 ```
 
-训练探索噪声仍开启。`RL_PPO_BATCH_REALIZE=1` 是可选的GPU提交优化，不改变PPO公式或奖励，默认关闭。直接调用 `flare_q6a/train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖，覆盖后不再属于仅改变模型/并行数的对齐配置。
+训练高斯探索噪声保持开启。`scripts/run.sh` 默认启用下列已通过数值检查的执行优化；它们不修改奖励、PPO目标或更新次数：
 
-checkpoint.npz按原版每100轮及正常训练结束保存；若提前Ctrl+C，未保存的更新会丢失。metrics.json、metrics.jsonl、training.log、TensorBoard记录训练指标；manifest.json记录命令和源码提交，config.json记录原配置与新模型/任务签名。status=PASS只表示流程校验通过。
+| 环境变量 | 默认 | 用途 |
+|---|---|---|
+| RL_PPO_JIT | 1 | 复用梯度计算执行图，参数显式输入 |
+| RL_PPO_JIT_ADAM | 1 | 复用裁剪/Adam图，状态和学习率显式输入 |
+| RL_ROLLOUT_JIT | 1 | 复用策略推理图，噪声显式输入，保留独立轨迹缓冲 |
+| RL_PPO_BATCH_REALIZE | 1 | 合并GPU提交 |
+| RL_MAIN_CPU | auto | 已初始化工作线程保持原亲和，主提交线程选择允许CPU中容量/频率最高核 |
+
+前四项可设为0作对照，`RL_MAIN_CPU=none` 关闭线程绑定；不修改系统governor、频率或超频。`RL_TORCH_THREADS` 可选限制CPU数据准备线程，默认不改PyTorch设置；它不控制GPU反向传播。推理块上限1024，训练块上限4096。原生GPU行索引始终启用，不依赖CPU高级索引。直接调用 `flare_q6a/train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖；修改这些超参数后与原PPO配置存在差异。
+
+柔性参考任务 `-e s1_waypoint_passing` 仍默认4并行，尚未验证63自由度柔性模型的大规模配置。
+
+checkpoint.npz按原版每100轮及正常训练结束保存；若提前Ctrl+C，未保存的更新会丢失。metrics.json、metrics.jsonl、training.log、TensorBoard记录训练指标；manifest.json记录命令、提交、执行开关与源码SHA256，source_snapshot/保存该次代码/模型/config；config.json及checkpoint记录原配置、新模型/任务签名与实际执行设置。status=PASS只表示流程校验通过。
 
 ## 6. 续训与评估
 
 ```bash
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 4 \
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid \
   --resume records/<运行目录>/checkpoint.npz --max_iterations 100
 scripts/run.sh flare_q6a/evaluate.py -e s1_waypoint_passing_rigid \
   --checkpoint records/<运行目录>/checkpoint.npz --envs 4 --episodes 4 --mode sample
@@ -129,4 +145,4 @@ tail -f records/<运行目录>/training.log
 
 GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延迟出现异常，频率不是占用率；NPU未使用。每次修改的原因、行为和验证结果写入 records/progress.md 并提交本地Git。历史悬停日志/测试结果保留作审计，不是当前任务配置。
 
-其他高通板需要Linux ARM64/Python3.12/glibc≥2.38，以及真实Adreno Vulkan/OpenCL。ICD路径不同可设置 `RL_VULKAN_ICD=/绝对路径/vendor_icd.json`。驱动、轮子、锁死边界、长时稳定性和收敛需重新测试；本工程尚未验证PX4实飞、NPU或第二块开发板。无需CPU训练回退，也不会自动推送远程。
+其他高通板需要Linux ARM64/Python3.12/glibc≥2.38，以及真实Adreno Vulkan/OpenCL。ICD路径不同可设置 `RL_VULKAN_ICD=/绝对路径/vendor_icd.json`。驱动、轮子、计算块/并行性能、长时稳定性和收敛需重新测试；本工程尚未验证PX4实飞、NPU或第二块开发板。无需CPU训练回退，也不会自动推送远程。

@@ -10,13 +10,13 @@ from env import CableEnv,ROOT
 from ppo import ActorCritic,PPO
 from hardware import configure_main_cpu
 from metrics import ExperimentLogger
-from task_config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,train_config,task_signature
+from task_config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,default_envs,train_config,task_signature
 
 def main():
     faulthandler.enable()
     faulthandler.register(signal.SIGUSR1,all_threads=True)
     p=argparse.ArgumentParser()
-    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=DEFAULT_ENVS)
+    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,help=f'default {DEFAULT_ENVS} for rigid; 4 for original flexible task')
     p.add_argument('--steps',type=int,help='default: upstream runner.num_steps_per_env (100)')
     p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
@@ -29,6 +29,7 @@ def main():
     p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
     p.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     args=p.parse_args()
+    if args.envs is None:args.envs=default_envs(args.exp_name)
     if args.exp_name==RIGID_TASK and args.physics!='genesis':p.error('rigid waypoint task requires Genesis Vulkan physics')
     source_train=train_config()
     if args.steps is None:args.steps=source_train['runner']['num_steps_per_env']
@@ -66,10 +67,11 @@ def main():
     else:env=CableEnv(args.envs)
     num_obs=env.obs().shape[1]
     model=ActorCritic(num_obs);trainer=PPO(model,cfg,microbatch_size=compute_chunk)
+    cpu_staging_threads=torch.get_num_threads() if args.physics=='genesis' else None
     host_dispatch=configure_main_cpu()
     print(f'Host dispatch: {host_dispatch}',flush=True)
     snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train,
-              'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'row_lookup':'native_opencl_index_load','jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware,'host_dispatch':host_dispatch}}
+              'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'row_lookup':'native_opencl_index_load','cpu_staging_threads':cpu_staging_threads,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware,'host_dispatch':host_dispatch}}
     if args.physics=='genesis':snapshot.update(environment=env.source_config,task_signature=env.signature,random_initial_episode_ages=True)
     (out/'config.json').write_text(json.dumps(snapshot,indent=2))
     print(f'GPU PPO: logical minibatch={args.envs*args.steps//cfg["num_mini_batches"]}, compute chunk={trainer.microbatch_size}, '
@@ -136,7 +138,7 @@ def main():
         row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
         history.append(row)
         run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':'flare_26','physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state(),
-             'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'row_lookup':'native_opencl_index_load','jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'host_dispatch':host_dispatch}}
+             'execution':{'microbatch_size':trainer.microbatch_size,'inference_chunk_size':trainer.inference_chunk_size,'row_lookup':'native_opencl_index_load','cpu_staging_threads':cpu_staging_threads,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'host_dispatch':host_dispatch}}
         if args.physics=='genesis':run.update(environment_config=env.source_config,task_signature=env.signature)
         if trainer.iteration % save_interval==0 or trainer.iteration==target_iteration:
             progress('checkpoint',iteration=trainer.iteration)

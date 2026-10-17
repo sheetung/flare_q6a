@@ -6,8 +6,11 @@ ROOT=Path(__file__).resolve().parents[1]
 RIGID_TASK='s1_waypoint_passing_rigid'
 FLEX_TASK='s1_waypoint_passing'
 MODEL=ROOT/'assets/rigid_suspended_system/rigid_suspended_system.urdf'
-DEFAULT_ENVS=4  # 4*100/4 = minibatch 100, below observed failing batch sizes.
+DEFAULT_ENVS=2048  # fastest measured rigid-task profile after native GPU row lookup.
+DEFAULT_FLEX_ENVS=4  # original flexible solver has not been profiled at this scale.
 DEFAULT_ITERATIONS=800  # original waypoint_passing_train.py command-line default
+
+def default_envs(task):return DEFAULT_ENVS if task==RIGID_TASK else DEFAULT_FLEX_ENVS
 
 def train_config():return yaml.safe_load((ROOT/'Flare/config/train/s1_train_config.yaml').read_text())
 def environment_config(rigid=True):
