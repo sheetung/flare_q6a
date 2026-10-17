@@ -299,3 +299,7 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 2026-10-17 性能适配第二阶段：B16×100 micro100/JIT梯度/合并提交连续3轮PASS、60次Adam更新，后两轮55.729/61.869 samples/s；B32相同执行选项连续3轮PASS、60更新，后两轮91.606/100.630 samples/s，检查点已保存。测试开始时均为e820381之前/之后本次工作区，全部源改动由Git提交追踪。新增裁剪+Adam TinyJit（所有参数、状态与动态学习率显式输入）与rollout策略TinyJit（噪声显式输入，输出独立复制保留历史），参数/Adam状态对照PASS4.841e-7，11.410s；64环境12次rollout缓存测试PASS误差0，覆盖观测/噪声变化、两次参数修改、历史轨迹不被覆盖。末块37样本加权对照PASS4.712e-7。B64真实仿真连续3轮测试中，目前所有JIT开关仍为测试显式设置。
 
 2026-10-17 B64首次全缓存运行在第1次采样前报TinyJit duplicate inputs，并非GPU锁死。复现确认全新参数的actor/critic部分同形随机参数共享底层Buffer；原CPU对照逐个numpy读取使该路径未暴露。修正为初始化及加载时给每个模型参数/优化器状态独立clone并逐个realize；新增train.py相同首权重snapshot顺序的fresh-init rollout回归PASS。原B64失败目录保留；run_microbatch_b64_v2_check已完成采样进入真实更新。新增性能汇总脚本，首轮排除，记录执行开关、吞吐、DRM进程engine、RSS/温度和checkpoint有限性，避免把不同优化组合误当仅并行数对照。
+
+2026-10-17 继续适配：完整JIT checkpoint/Adam/GPU噪声与shuffle RNG续训数值回归PASS，参数误差5.856e-6。micro128（含128×3+16末块）实际rsl_rl对照PASS4.973e-7。B64全JIT连续3轮PASS，后两轮综合194.527 samples/s；B128 micro128+主提交线程自动选择cpu7（capacity1024/2.7072GHz，既有工作线程亲和不变）连续3轮PASS，后两轮约310.8 samples/s。只改本进程亲和，不修改系统频率或governor。默认微块改为auto：逻辑minibatch能被128整除用128，其余100；原PPO逻辑不变。
+
+减少每microbatch统计的host同步，在GPU按样本权重累积5项统计、每逻辑minibatch读取一次；实际rsl_rl参数/Adam/KL对照PASS4.973e-7。采样和bootstrap推理也分块≤128，噪声仍在外部产生，不改变探索；257环境（两整块加1末块）对独立CPU PyTorch公式验证PASS，最大误差1.907e-6，覆盖更新权重、轨迹缓冲独立、随机层初始化与参数/优化器buffer独立。B256真实3轮测试中。监督器新增每次运行代码/模型/config只读快照与SHA256，避免工作区后续编辑影响实验审计；不复制密码或环境凭据。

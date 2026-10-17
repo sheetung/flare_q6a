@@ -8,6 +8,7 @@ from tinygrad import Tensor,Device,Context
 from tinygrad.nn.state import get_state_dict
 from env import CableEnv,ROOT
 from ppo import ActorCritic,PPO
+from hardware import configure_main_cpu
 from metrics import ExperimentLogger
 from task_config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,train_config,task_signature
 
@@ -20,7 +21,7 @@ def main():
     p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
     p.add_argument('--minibatches',type=int)
-    p.add_argument('--microbatch-size',type=int,default=100,help='GPU compute chunk; logical PPO minibatches and Adam updates unchanged')
+    p.add_argument('--microbatch-size',type=int,help='GPU compute chunk; auto: 128 if logical minibatch divisible by 128, otherwise 100')
     p.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>')
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
@@ -46,7 +47,9 @@ def main():
     if args.minibatches is not None:cfg['num_mini_batches']=args.minibatches
     cfg['timeout_bootstrap']=args.timeout_bootstrap
     assert cfg['num_learning_epochs']>0 and 0<cfg['num_mini_batches']<=args.envs*args.steps
-    if not 1<=args.microbatch_size<200:p.error('--microbatch-size must be between 1 and 199; default 100 is validated')
+    logical_size=args.envs*args.steps//cfg['num_mini_batches']
+    compute_chunk=args.microbatch_size if args.microbatch_size is not None else (128 if logical_size%128==0 else 100)
+    if not 1<=compute_chunk<200:p.error('--microbatch-size must be between 1 and 199; 100 and 128 are validated')
     # Validate checkpoint mode before expensive scene construction.
     if resume:
         with np.load(resume,allow_pickle=False) as d:meta=json.loads(str(d['metadata']))
@@ -62,9 +65,11 @@ def main():
         env.env.episode_length_buf=torch.randint_like(env.env.episode_length_buf,high=env.env.max_episode_length)
     else:env=CableEnv(args.envs)
     num_obs=env.obs().shape[1]
-    model=ActorCritic(num_obs);trainer=PPO(model,cfg,microbatch_size=args.microbatch_size)
+    model=ActorCritic(num_obs);trainer=PPO(model,cfg,microbatch_size=compute_chunk)
+    host_dispatch=configure_main_cpu()
+    print(f'Host dispatch: {host_dispatch}',flush=True)
     snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs,'upstream_train_config':source_train,
-              'execution':{'microbatch_size':trainer.microbatch_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware}}
+              'execution':{'microbatch_size':trainer.microbatch_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'hardware':trainer.hardware,'host_dispatch':host_dispatch}}
     if args.physics=='genesis':snapshot.update(environment=env.source_config,task_signature=env.signature,random_initial_episode_ages=True)
     (out/'config.json').write_text(json.dumps(snapshot,indent=2))
     print(f'GPU PPO: logical minibatch={args.envs*args.steps//cfg["num_mini_batches"]}, compute chunk={trainer.microbatch_size}, '
@@ -97,12 +102,12 @@ def main():
                 logger.observe(reward,done,getattr(env,'last_step_info',None))
                 if step % 10 == 0:progress('rollout',iteration=trainer.iteration+1,step=step+1,steps=args.steps)
                 if args.timeout_bootstrap=='terminal':
-                    _,boot=model.forward(terminal_obs);boot=boot.detach()
+                    boot=trainer.value(terminal_obs).detach()
                 else:boot=value # exact rsl_rl v1.0.2 process_env_step convention
                 reward=(reward+cfg['gamma']*timeout.float()*boot).realize()
                 roll.append((obs,action,logp,value,reward,done,oldmean,oldsigma));obs=newobs
             collection_end=time.perf_counter()
-            _,nv=model.forward(obs);nv=nv.detach().realize();adv=Tensor.zeros(args.envs)
+            nv=trainer.value(obs).detach().realize();adv=Tensor.zeros(args.envs)
             advantages=[];returns=[]
             for item in reversed(roll):
                 v,r,d=item[3:6]
@@ -131,7 +136,7 @@ def main():
         row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
         history.append(row)
         run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':'flare_26','physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state(),
-             'execution':{'microbatch_size':trainer.microbatch_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize}}
+             'execution':{'microbatch_size':trainer.microbatch_size,'jit':trainer.jit_enabled,'jit_adam':trainer.jit_adam,'rollout_jit':trainer.rollout_jit,'batch_realize':trainer.batch_realize,'host_dispatch':host_dispatch}}
         if args.physics=='genesis':run.update(environment_config=env.source_config,task_signature=env.signature)
         if trainer.iteration % save_interval==0 or trainer.iteration==target_iteration:
             progress('checkpoint',iteration=trainer.iteration)

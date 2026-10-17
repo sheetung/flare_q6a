@@ -15,8 +15,14 @@ from hardware import require_adreno
 
 class ActorCritic:
     def __init__(self,num_obs=26):
-        self.actor=[nn.Linear(num_obs,128),nn.Linear(128,128),nn.Linear(128,4)]
-        self.critic=[nn.Linear(num_obs,128),nn.Linear(128,128),nn.Linear(128,1)]
+        def linear(inputs,outputs):
+            layer=nn.Linear(inputs,outputs)
+            # Consume each random initialization before constructing the next
+            # layer; lazy equal-shaped random tensors can otherwise alias.
+            layer.weight.realize();layer.bias.realize()
+            return layer
+        self.actor=[linear(num_obs,128),linear(128,128),linear(128,4)]
+        self.critic=[linear(num_obs,128),linear(128,128),linear(128,1)]
         # rsl_rl optimizes sigma directly, not log(sigma).
         self.std=Tensor.ones(4)
     def forward(self,obs):
@@ -62,7 +68,7 @@ class PPO:
         self.jit_enabled=os.environ.get('RL_PPO_JIT','0')=='1'
         self._chunk_runners={}
         self.rollout_jit=os.environ.get('RL_ROLLOUT_JIT','0')=='1'
-        self._sample_runner=TinyJit(self._sample_compute) if self.rollout_jit else self._sample_compute
+        self._sample_runners={}
         self.jit_adam=os.environ.get('RL_PPO_JIT_ADAM','0')=='1'
         self._optimizer_runner=TinyJit(self._optimizer_compute) if self.jit_adam else self._optimizer_compute
         self.lr=cfg['learning_rate']
@@ -80,12 +86,26 @@ class PPO:
         return outputs
 
     def sample(self,obs,noise):
-        outputs=self._sample_runner(obs,noise,*self.params)
-        if not self.rollout_jit:return outputs
-        # Trajectory storage must not alias reusable JIT outputs.
-        owned=tuple(t.clone() for t in outputs)
-        Tensor.realize(*owned)
-        return owned
+        pieces=[]
+        for start in range(0,obs.shape[0],128):
+            end=min(start+128,obs.shape[0]);n=end-start
+            x,z=(obs,noise) if start==0 and end==obs.shape[0] else (obs[start:end].clone().realize(),noise[start:end].clone().realize())
+            if self.rollout_jit:
+                if n not in self._sample_runners:self._sample_runners[n]=TinyJit(self._sample_compute)
+                outputs=self._sample_runners[n](x,z,*self.params)
+                # Trajectory storage must not alias reusable JIT outputs.
+                outputs=tuple(t.clone() for t in outputs)
+                Tensor.realize(*outputs)
+            else:outputs=self._sample_compute(x,z,*self.params)
+            pieces.append(outputs)
+        if len(pieces)==1:return pieces[0]
+        result=tuple(Tensor.cat(*items,dim=0) for items in zip(*pieces))
+        Tensor.realize(*result)
+        return result
+
+    def value(self,obs):
+        # Same bounded inference path, with no random-number consumption.
+        return self.sample(obs,Tensor.zeros(obs.shape[0],4).realize())[2]
 
     def _chunk(self,batch,idx,n,size):
         keys=tuple(batch)
@@ -135,17 +155,16 @@ class PPO:
                     # Split compute only: a logical minibatch still has one global
                     # gradient clip, one adaptive-KL decision and one Adam update.
                     accumulated=None
-                    metrics=np.zeros(5,dtype=np.float64)
+                    metric_tensor=None
                     for offset in range(0,size,self.microbatch_size):
                         n=min(self.microbatch_size,size-offset)
                         idx=Tensor(perm[i*size+offset:i*size+offset+n].astype(np.int32),device='CL')
                         if progress_callback:progress_callback('ppo_chunk',epoch=epoch+1,minibatch=i+1,
                             microbatch_offset=offset,microbatch_size=n,jit=self.jit_enabled)
                         grads,chunk_metrics=self._chunk(batch,idx,n,size)
-                        values_chunk=chunk_metrics.numpy().astype(float)
-                        if not np.isfinite(values_chunk).all():
-                            raise FloatingPointError(f'PPO invalid losses: epoch={epoch+1}, minibatch={i+1}, offset={offset}, values={values_chunk.tolist()}')
-                        metrics+=values_chunk*(n/size)
+                        weighted=chunk_metrics*(n/size)
+                        metric_tensor=weighted if metric_tensor is None else metric_tensor+weighted
+                        metric_tensor.realize()
                         # Returned JIT buffers are reused; accumulate before replay.
                         if accumulated is None:
                             # Own buffers: a future JIT replay overwrites its outputs.
@@ -155,6 +174,11 @@ class PPO:
                             Tensor.realize(*accumulated)
                         else:accumulated=[(a+g).realize() for a,g in zip(accumulated,grads)]
                     for p,g in zip(self.params,accumulated):p.grad=g
+                    # One host read per logical minibatch, rather than a queue
+                    # synchronization for every compute chunk.
+                    metrics=metric_tensor.numpy().astype(float)
+                    if not np.isfinite(metrics).all():
+                        raise FloatingPointError(f'PPO invalid minibatch losses: epoch={epoch+1}, minibatch={i+1}, values={metrics.tolist()}')
                     klval=float(metrics[4])
                     self.lr=adapt_lr(self.lr,klval,cfg)
                     self.opt.lr.assign([self.lr]).realize()

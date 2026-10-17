@@ -19,7 +19,7 @@ for run in a.runs:
     util=[r['gpu_engine_utilization_percent'] for r in active if r.get('gpu_engine_utilization_percent') is not None]
     item={'output':str(p),'state':status.get('state'),'source_commit':status.get('git_commit'),
         'arguments':config.get('arguments'),'execution':config.get('execution'),
-        'runtime_flags':{k:status.get(k) for k in ('ppo_batch_realize','ppo_jit','ppo_jit_adam','rollout_jit')},
+        'runtime_flags':{k:status.get(k) for k in ('ppo_batch_realize','ppo_jit','ppo_jit_adam','rollout_jit','main_cpu')},
         'iterations_completed':len(metrics),'iteration_timings':[{k:r[k] for k in ('iteration','samples','seconds','fps','collection_seconds','learning_seconds','updates')} for r in metrics],
         'steady_samples_per_second':sum(r['samples'] for r in steady)/sum(r['seconds'] for r in steady) if steady else None,
         'active_gpu_engine_mean_percent':statistics.mean(util) if util else None,
