@@ -237,3 +237,9 @@ train.py 增加 rollout/update/checkpoint 阶段进度文件与原始奖励均�
 日志集成检查 PASS：原版 Genesis 8 步、2 环境，强制 3 步超时回合，共 4 个完成回合；六项加权奖励之和等于环境返回值；位置/摆角为 reset 前有限值；完整回合长度统计为 3 步；无需修改 PPO 算法。见 genesis_metrics_checks.log。
 
 旧长训练 02 在第 49 轮 / 980 次更新的完整检查点保存后停止。新长训练 03 将恢复该检查点，追加 451 轮至总第 500 轮；网络、Adam、学习率和迭代数保留，环境 fresh reset，日志窗口从新进程开始积累（旧日志没有完整回合信息，不能补造）。
+
+新版长训练 03 已恢复并实测输出第 50～52 轮可读日志，已继续进入第 53 轮。第 52 轮已统计 7 个完整回合，平均回报约 -0.16519、平均长度约 54.14 步；该轮记录 rope/body-angle failure 2 次、航点到达 0 次。指标是实测值，未补造旧日志缺失的回合信息。
+
+TensorBoard 实时文件验证 PASS：已读到 39 个 scalar tag，包括 value loss、KL、原始每步奖励、无人机/负载误差、摆角。检查使用项目虚拟环境（系统 Python 未安装 tensorboard）。见 live_tensorboard_check.json。
+
+运行目录和服务入口已更新到 records/active_training.md。修改仅增加观察和日志，不修改任务奖励、动作、PPO 更新或终止规则。

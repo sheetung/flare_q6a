@@ -125,7 +125,7 @@ class ExperimentLogger:
         return row
     def format(self,r):
         def fmt(v,d=4):return 'N/A (no completed episodes yet)' if v is None else f'{v:.{d}f}'
-        lines=['#'*80,f"Learning iteration {r['iteration']}/{self.target}".center(80),'']
+        lines=['#'*80,f"Learning iteration {r['iteration']}/{self.target}".center(80).rstrip(),'']
         def add(label,value):lines.append(f'{label+":":>36} {value}')
         add('Computation',f"{r['fps']:.1f} steps/s (collection {r['collection_seconds']:.2f}s, learning {r['learning_seconds']:.2f}s)")
         for label,key in [('Value function loss','value_loss'),('Surrogate loss','policy_loss'),('KL','kl'),('Mean action noise std','mean_action_noise_std')]:add(label,fmt(r[key]))

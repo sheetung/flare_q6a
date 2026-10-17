@@ -4,7 +4,7 @@ phase: Genesis Vulkan init
 phase: original FLARE scene build
 phase: original FLARE reset
 ################################################################################
-                             Learning iteration 1/1                             
+                             Learning iteration 1/1
 
                         Computation: 9.5 steps/s (collection 1.69s, learning 0.00s)
                 Value function loss: 0.0000
