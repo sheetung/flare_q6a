@@ -175,9 +175,11 @@ git submodule status
 后台监督器可运行固定轮数的训练，并每 5 秒记录资源数据：
 
 ```bash
-scripts/run.sh scripts/long_training.py --output records/run_long_example \
+scripts/run.sh scripts/long_training.py \
   --envs 8 --steps 32 --iterations 500
 ```
+
+省略 `--output` 时自动创建 `records/run_<UTC时间戳>`，并打印完整目录；也可用 `--output` 指定目录。
 
 监督器输出 `status.json`、`manifest.json`、`telemetry.jsonl` 和 `latest_telemetry.json`；训练输出 `training.log`、`progress.json`、指标及检查点。`status.json` 记录训练 PID 和完成/失败状态；`manifest.json` 记录 Git commit 与完整命令。
 

@@ -243,3 +243,5 @@ train.py 增加 rollout/update/checkpoint 阶段进度文件与原始奖励均�
 TensorBoard 实时文件验证 PASS：已读到 39 个 scalar tag，包括 value loss、KL、原始每步奖励、无人机/负载误差、摆角。检查使用项目虚拟环境（系统 Python 未安装 tensorboard）。见 live_tensorboard_check.json。
 
 运行目录和服务入口已更新到 records/active_training.md。修改仅增加观察和日志，不修改任务奖励、动作、PPO 更新或终止规则。
+
+2026-10-17：长训练监督器的 --output 改为可选，默认自动生成 UTC 时间戳目录；直接训练入口统一使用可读时间戳，两个入口均打印输出路径。保留显式路径和原有训练行为。

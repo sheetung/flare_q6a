@@ -1,6 +1,7 @@
 """FLARE Genesis Vulkan physics + OpenCL PPO. No flight hardware access."""
 import argparse,json,time,faulthandler,signal
 from pathlib import Path
+from datetime import datetime,timezone
 import yaml
 import numpy as np
 from tinygrad import Tensor,Device,Context
@@ -18,14 +19,15 @@ def main():
     p.add_argument('--iterations',type=int,default=3,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
     p.add_argument('--minibatches',type=int)
-    p.add_argument('--output')
+    p.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>')
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--timeout-bootstrap',choices=['rsl','terminal'],default='rsl')
     args=p.parse_args()
     assert min(args.envs,args.steps,args.iterations)>0
     assert Device.DEFAULT=='CL','CPU training fallback forbidden'
-    out=Path(args.output or ROOT/'records'/('run_'+str(time.time_ns()))).resolve();out.mkdir(parents=True,exist_ok=True)
+    out=Path(args.output or ROOT/'records'/datetime.now(timezone.utc).strftime('run_%Y%m%d_%H%M%S_%f')).resolve();out.mkdir(parents=True,exist_ok=True)
+    print(f'Training output: {out}',flush=True)
     def progress(phase,**extra):
         data={'phase':phase,'updated_unix':time.time(),**extra}
         temp=out/'progress.json.tmp';temp.write_text(json.dumps(data));temp.replace(out/'progress.json')

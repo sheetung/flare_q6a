@@ -28,10 +28,12 @@ def drm(pid):
     return clients
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--output',required=True);ap.add_argument('--envs',type=int,default=8)
+    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('--envs',type=int,default=8)
     ap.add_argument('--steps',type=int,default=32);ap.add_argument('--iterations',type=int,default=500)
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600);a=ap.parse_args()
-    out=Path(a.output).resolve();out.mkdir(parents=True,exist_ok=True)
+    out=Path(a.output).resolve() if a.output else ROOT/'records'/datetime.now(timezone.utc).strftime('run_%Y%m%d_%H%M%S_%f')
+    out.mkdir(parents=True,exist_ok=True)
+    print(f'Training output: {out}',flush=True)
     if (out/'status.json').exists():raise RuntimeError('Existing supervised run directory; use a new output directory')
     cmd=[str(ROOT/'scripts/run.sh'),'flare_q6a/train.py','--physics','genesis','--envs',str(a.envs),
          '--steps',str(a.steps),'--iterations',str(a.iterations),'--output',str(out)]
