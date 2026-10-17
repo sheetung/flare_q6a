@@ -223,3 +223,15 @@ python3 scripts/training_status.py --output records/run_long_20261017_01 --watch
 - 这些是带探索噪声的训练指标，不替代固定任务、确定性策略的独立评估。
 
 日志测试：`scripts/run.sh flare_q6a/check_metrics.py`（仅 CPU 记账测试）；`scripts/run.sh flare_q6a/check_genesis_metrics.py`（使用原版 GPU 仿真，应在没有其他训练竞争 GPU 时运行）。
+
+## 原版 FLARE 命令行兼容
+
+高通入口支持原版 `-e/--exp_name`、`-v/--vis`、`-B/--num_envs`、`--max_iterations`；原有 `--envs`、`--iterations` 仍可使用。当前实验支持 `s1_waypoint_passing`。自动目录包含实验名和 UTC 时间戳。
+
+```bash
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 8 --max_iterations 500
+# 在图形桌面终端打开原版仿真窗口和目标标记：
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 8 --max_iterations 500 -v
+```
+
+请只运行一个训练任务。`-v` 需要图形显示环境，窗口接入原版 HoverEnv 的 show_viewer 和 visualize_target。高通桌面窗口的实际显示效果仍需运行验证；无显示环境会明确报错。为避免已发现的 GPU 锁死，默认保持 8 环境、32 步，而非原版 2048 环境；监督器默认 500 轮，直接 train.py 默认 3 轮。--max_iterations 与 --iterations 在续训时均表示追加轮数。上游 Flare 子模块保持原样；勿直接运行其中依赖 CUDA 的训练入口。

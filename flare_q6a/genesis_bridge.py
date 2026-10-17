@@ -50,16 +50,19 @@ class CpuStagingMixer(_original_mixer):
 mixer.QuadXMixer=CpuStagingMixer
 
 class GenesisBridge:
-    def __init__(self,n=8):
+    def __init__(self,n=8,show_viewer=False):
         # Relative paths in original FLARE assets require this working directory.
         import os
+        if show_viewer and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
+            raise RuntimeError('-v requires a desktop display; run from a graphical desktop terminal')
         os.chdir(ROOT/'Flare')
         print('phase: Genesis Vulkan init',flush=True)
         gs.init(backend=gs.vulkan,logging_level='warning')
         assert gstaichi.lang.impl.current_cfg().arch==gstaichi.vulkan, 'CPU physics fallback forbidden'
         cfg=yaml.safe_load((ROOT/'Flare/config/envs/s1_env_config.yaml').read_text())
-        print('phase: original FLARE scene build',flush=True)
-        self.env=HoverEnv(n,cfg['env_cfg'],cfg['obs_cfg'],cfg['reward_cfg'],cfg['command_cfg'],show_viewer=False,device='cpu')
+        if show_viewer:cfg['env_cfg']['visualize_target']=True
+        print(f'phase: original FLARE scene build (viewer={show_viewer})',flush=True)
+        self.env=HoverEnv(n,cfg['env_cfg'],cfg['obs_cfg'],cfg['reward_cfg'],cfg['command_cfg'],show_viewer=show_viewer,device='cpu')
         self.n=n
         print('phase: original FLARE reset',flush=True)
         self.env.reset()

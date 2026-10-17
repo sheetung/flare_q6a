@@ -14,19 +14,22 @@ def main():
     faulthandler.enable()
     faulthandler.register(signal.SIGUSR1,all_threads=True)
     p=argparse.ArgumentParser()
-    p.add_argument('--envs',type=int,default=8)
+    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=8)
     p.add_argument('--steps',type=int,default=32)
-    p.add_argument('--iterations',type=int,default=3,help='additional iterations, including on resume')
+    p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=3,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
     p.add_argument('--minibatches',type=int)
     p.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>')
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--timeout-bootstrap',choices=['rsl','terminal'],default='rsl')
+    p.add_argument('-e','--exp_name',choices=['s1_waypoint_passing'],default='s1_waypoint_passing')
+    p.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     args=p.parse_args()
+    if args.vis and args.physics!='genesis':p.error('-v requires --physics genesis')
     assert min(args.envs,args.steps,args.iterations)>0
     assert Device.DEFAULT=='CL','CPU training fallback forbidden'
-    out=Path(args.output or ROOT/'records'/datetime.now(timezone.utc).strftime('run_%Y%m%d_%H%M%S_%f')).resolve();out.mkdir(parents=True,exist_ok=True)
+    out=Path(args.output or ROOT/'records'/datetime.now(timezone.utc).strftime('run_'+args.exp_name+'_%Y%m%d_%H%M%S_%f')).resolve();out.mkdir(parents=True,exist_ok=True)
     print(f'Training output: {out}',flush=True)
     def progress(phase,**extra):
         data={'phase':phase,'updated_unix':time.time(),**extra}
@@ -45,7 +48,7 @@ def main():
     Tensor.manual_seed(1);setup_start=time.perf_counter()
     if args.physics=='genesis':
         from genesis_bridge import GenesisBridge
-        env=GenesisBridge(args.envs)
+        env=GenesisBridge(args.envs,show_viewer=args.vis)
     else:env=CableEnv(args.envs)
     model=ActorCritic();trainer=PPO(model,cfg)
     loaded_meta=trainer.load(resume) if resume else {}

@@ -40,15 +40,20 @@ def mirror_log(path,stop):
             else:stop.wait(0.1)
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('--envs',type=int,default=8)
-    ap.add_argument('--steps',type=int,default=32);ap.add_argument('--iterations',type=int,default=500)
-    ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600);a=ap.parse_args()
-    out=Path(a.output).resolve() if a.output else ROOT/'records'/datetime.now(timezone.utc).strftime('run_%Y%m%d_%H%M%S_%f')
+    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=8)
+    ap.add_argument('--steps',type=int,default=32);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=500)
+    ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600)
+    ap.add_argument('-e','--exp_name',choices=['s1_waypoint_passing'],default='s1_waypoint_passing')
+    ap.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
+    a=ap.parse_args()
+    out=Path(a.output).resolve() if a.output else ROOT/'records'/datetime.now(timezone.utc).strftime('run_'+a.exp_name+'_%Y%m%d_%H%M%S_%f')
     out.mkdir(parents=True,exist_ok=True)
     print(f'Training output: {out}',flush=True)
     if (out/'status.json').exists():raise RuntimeError('Existing supervised run directory; use a new output directory')
     cmd=[str(ROOT/'scripts/run.sh'),'flare_q6a/train.py','--physics','genesis','--envs',str(a.envs),
          '--steps',str(a.steps),'--iterations',str(a.iterations),'--output',str(out)]
+    cmd+=['--exp_name',a.exp_name]
+    if a.vis:cmd+=['--vis']
     if a.resume:cmd+=['--resume',str(Path(a.resume).resolve())]
     try:commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     except subprocess.CalledProcessError:commit=None
