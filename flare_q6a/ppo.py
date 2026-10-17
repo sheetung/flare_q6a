@@ -55,8 +55,10 @@ def losses(model,batch,cfg):
 
 class PPO:
     def __init__(self,model,cfg,seed=1,microbatch_size=100):
-        if microbatch_size<1 or microbatch_size>=200:raise ValueError("GPU microbatch size must be between 1 and 199; default 100 is validated")
+        if microbatch_size<1 or (microbatch_size>4096 and os.environ.get("RL_GPU_EXPERIMENTAL_CHUNKS")!="1"):
+            raise ValueError("GPU microbatch size must be between 1 and 4096; larger kernels require internal experimental opt-in.")
         self.microbatch_size=microbatch_size
+        self.inference_chunk_size=min(1024,max(128,microbatch_size))
         self.hardware=require_adreno()
         self.model,self.cfg=model,dict(cfg)
         self.params=get_parameters(model)
@@ -87,8 +89,8 @@ class PPO:
 
     def sample(self,obs,noise):
         pieces=[]
-        for start in range(0,obs.shape[0],128):
-            end=min(start+128,obs.shape[0]);n=end-start
+        for start in range(0,obs.shape[0],self.inference_chunk_size):
+            end=min(start+self.inference_chunk_size,obs.shape[0]);n=end-start
             x,z=(obs,noise) if start==0 and end==obs.shape[0] else (obs[start:end].clone().realize(),noise[start:end].clone().realize())
             if self.rollout_jit:
                 if n not in self._sample_runners:self._sample_runners[n]=TinyJit(self._sample_compute)

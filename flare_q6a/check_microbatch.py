@@ -66,6 +66,7 @@ for k,p in enumerate(t.params):
     state=ref.optimizer.state[rp]
     np.testing.assert_allclose(t.opt.m[k].numpy(),state['exp_avg'].numpy(),rtol=3e-3,atol=2e-6)
     np.testing.assert_allclose(t.opt.v[k].numpy(),state['exp_avg_sq'].numpy(),rtol=3e-3,atol=2e-7)
+assert parammax<5e-5, f"parameter error {parammax} exceeds absolute limit"
 assert t.updates==args.epochs*4
 print(json.dumps({'status':'PASS','reference':'actual rsl_rl v1.0.2 CPU test-only',
     'training_device':'CL','jit':t.jit_enabled,'jit_adam':t.jit_adam,'batch_realize':t.batch_realize,'samples':args.samples,'logical_minibatch_size':args.samples//4,
