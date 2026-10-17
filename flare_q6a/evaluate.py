@@ -11,6 +11,8 @@ p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
 p.add_argument('--envs',type=int,default=2)
 p.add_argument('--test-episode-steps',type=int,default=0)
 a=p.parse_args();assert Device.DEFAULT=='CL'
+from hardware import require_adreno
+require_adreno()
 from ppo import load_policy
 model=ActorCritic();load_policy(model,a.checkpoint)
 if a.physics=='genesis':

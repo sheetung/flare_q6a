@@ -75,13 +75,14 @@ OpenCL 必须列出 GPU，例如 `rusticl / FD643`；Vulkan 必须有真实 Adre
 scripts/setup.sh
 ```
 
-安装脚本检查 Linux ARM64/Python 3.12，清除继承的 ROS PYTHONPATH，创建 `.venv-gpu`，安装锁定依赖并编译指定 Genesis 的网格扩展。需要网络、数 GB 可用磁盘和编译工具。
+安装脚本检查 Linux ARM64/Python 3.12/glibc ≥ 2.38，清除继承的 ROS PYTHONPATH，创建 `.venv-gpu`，安装锁定依赖并编译指定 Genesis 的网格扩展。需要网络、数 GB 可用磁盘和编译工具。
 
 原版 Taichi 没有本工程所需的官方 Linux ARM64 wheel，因此使用 GsTaichi 4.6.0。`genesis_bridge.py` 提供显式导入/内部类型兼容层，并替换旧版私有张量导出优化。Genesis 以 `--no-deps` 安装；`pip check` 的 `genesis-world requires taichi` 是此替代方案的已知元数据差异，不能据此宣称完全无依赖警告。
 
 ## 4. 验证后再训练
 
 ```bash
+scripts/run.sh flare_q6a/hardware.py
 scripts/run.sh flare_q6a/check_ppo.py
 scripts/run.sh flare_q6a/check_parity.py
 scripts/run.sh flare_q6a/genesis_bridge.py

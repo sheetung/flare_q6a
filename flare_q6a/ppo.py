@@ -11,6 +11,7 @@ import numpy as np
 from tinygrad import Tensor, Context, nn
 from tinygrad.nn.optim import Adam
 from tinygrad.nn.state import get_parameters, get_state_dict
+from hardware import require_adreno
 
 class ActorCritic:
     def __init__(self):
@@ -48,6 +49,7 @@ def losses(model,batch,cfg):
 
 class PPO:
     def __init__(self,model,cfg,seed=1):
+        self.hardware=require_adreno()
         self.model,self.cfg=model,dict(cfg)
         self.params=get_parameters(model)
         assert all(p.device.startswith('CL') for p in self.params)

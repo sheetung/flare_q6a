@@ -6,6 +6,7 @@ if [[ "$(uname -m)" != aarch64 ]]; then
 fi
 PYTHON="${RL_PYTHON:-python3.12}"
 "$PYTHON" -c 'import sys; assert sys.version_info[:2] == (3,12), "Use Python 3.12 for the tested environment"'
+"$PYTHON" -c 'import platform; name,version=platform.libc_ver(); assert name == "glibc" and tuple(map(int,version.split(".")[:2])) >= (2,38), "This lockfile needs glibc >= 2.38 (Ubuntu 24.04 recommended)"'
 for source in Flare/README.md Genesis/setup.py rsl_rl_reference/setup.py; do
   [[ -f "$source" ]] || { echo 'Run git submodule update --init --recursive first.' >&2; exit 1; }
 done

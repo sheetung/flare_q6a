@@ -168,3 +168,17 @@ check_parity.py 与真实上游 PPO CPU reference 使用相同权重、轨迹和
 测试期间修正了参考测试的 critic privileged observation 设置，并用浮点容差替代学习率浮点精确相等；没有通过放宽参数更新容差掩盖算法错误。
 
 基础 Gaussian/PPO/GAE 对照重新 PASS。长时间稳定性与收敛仍未验证。
+
+### 原版实际训练与恢复复测
+
+- 对齐后的 PPO 在原版 Genesis 环境训练 1 轮：8 样本、2 次 minibatch 更新，学习率由 0.0003 调整至 0.000675；保存 schema-2 checkpoint。见 ppo_aligned.log。
+- 在新进程重建环境、加载 checkpoint 后追加 1 轮：迭代数从 1 到 2，更新数从 2 到 4，学习率继续至 0.00151875。PASS，见 ppo_resumed.log。此短测证明实际恢复路径可用，不证明长期训练收敛。
+- 新增硬件检查：OpenCL 必须是 GPU，vendor ID 必须为 Qualcomm 0x5143；本机 FD643 检查 PASS，见 hardware_verified.log。防止迁移时误选 CPU OpenCL。
+- 安装脚本增加 glibc >= 2.38 检查，匹配当前锁定 wheel 的最低要求。
+
+### Git 验证
+
+- 首次本地提交 b51206d，main 分支，使用现有 Git 提交身份；没有主仓库 remote。
+- 在 /tmp 的独立克隆中，从本地上游副本取出全部 3 个固定 submodule；检查点、虚拟环境和凭据未进入 Git tracked files。
+- shell 语法与 Python 编译检查通过。
+- 此验证覆盖 Git 打包和本机已安装环境，不等于另一块高通板已部署成功，也没有在新系统重装全部依赖。

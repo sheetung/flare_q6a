@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "scope": "genesis PPO training smoke; convergence unverified",
+  "max_weight_change": 0.002530723810195923,
+  "setup_seconds": 26.143877634999626,
+  "training_seconds": 9.54040003199998,
+  "arguments": {
+    "envs": 2,
+    "steps": 4,
+    "iterations": 1,
+    "epochs": 1,
+    "minibatches": 2,
+    "output": "records/ppo_resumed",
+    "resume": "records/ppo_aligned/checkpoint.npz",
+    "physics": "genesis",
+    "timeout_bootstrap": "rsl"
+  },
+  "config": {
+    "clip_param": 0.2,
+    "desired_kl": 0.01,
+    "entropy_coef": 0.002,
+    "gamma": 0.99,
+    "lam": 0.95,
+    "learning_rate": 0.0003,
+    "max_grad_norm": 1.0,
+    "num_learning_epochs": 1,
+    "num_mini_batches": 2,
+    "schedule": "adaptive",
+    "use_clipped_value_loss": true,
+    "value_loss_coef": 1.0,
+    "timeout_bootstrap": "rsl"
+  },
+  "iteration": 2,
+  "updates": 4
+}
