@@ -12,6 +12,7 @@ from tinygrad import Tensor, Context, nn, TinyJit
 from tinygrad.nn.optim import Adam
 from tinygrad.nn.state import get_parameters, get_state_dict
 from hardware import require_adreno
+from gpu_ops import take_rows
 
 class ActorCritic:
     def __init__(self,num_obs=26):
@@ -114,7 +115,7 @@ class PPO:
         def compute(index,*inputs):
             values=inputs[:len(keys)]
             self.opt.zero_grad()
-            b={k:v[index] for k,v in zip(keys,values)}
+            b={k:take_rows(v,index) for k,v in zip(keys,values)}
             total,policy,vl,entropy,kl=losses(self.model,b,self.cfg)
             metrics=Tensor.stack(*[t.detach() for t in (total,policy,vl,entropy,kl)])
             (total*(n/size)).backward()
