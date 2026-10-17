@@ -55,6 +55,9 @@ class PPO:
         self.model,self.cfg=model,dict(cfg)
         self.params=get_parameters(model)
         assert all(p.device.startswith('CL') for p in self.params)
+        # JIT inputs must own separate buffers, including freshly initialized
+        # or checkpoint-loaded tensors with identical values/shapes.
+        for p in self.params:p.assign(p.clone()).realize()
         self.batch_realize=os.environ.get('RL_PPO_BATCH_REALIZE','0')=='1'
         self.jit_enabled=os.environ.get('RL_PPO_JIT','0')=='1'
         self._chunk_runners={}
@@ -64,6 +67,7 @@ class PPO:
         self._optimizer_runner=TinyJit(self._optimizer_compute) if self.jit_adam else self._optimizer_compute
         self.lr=cfg['learning_rate']
         self.opt=Adam(self.params,lr=self.lr,fused=False)
+        for t in self._optimizer_tensors().values():t.assign(t.clone()).realize()
         self.rng=np.random.default_rng(seed)
         self.iteration,self.updates=0,0
     def _sample_compute(self,obs,noise,*parameters):
@@ -201,7 +205,7 @@ class PPO:
             # Validate everything before mutating the model.
             for k,t in tensors.items():
                 if k not in data or data[k].shape!=t.shape or not np.isfinite(data[k]).all():raise ValueError(f'invalid checkpoint tensor: {k}')
-            for k,t in tensors.items():t.assign(Tensor(data[k],device=t.device)).realize()
+            for k,t in tensors.items():t.assign(Tensor(data[k],device=t.device).clone()).realize()
             self.lr=meta['learning_rate'];self.iteration=meta['iteration'];self.updates=meta['updates']
             self.rng.bit_generator.state=meta['numpy_rng']
             def tuples(x):return tuple(tuples(v) for v in x) if isinstance(x,list) else x

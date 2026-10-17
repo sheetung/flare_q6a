@@ -297,3 +297,5 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 新增check_microbatch与实际rsl_rl v1.0.2对照：1600样本/4minibatches/2epochs，micro100，参数误差7.749e-7，Adam一二阶状态与学习率/更新次数PASS，58.217s。JIT第一版未显式传入更新后的参数，数值对照失败已拒绝；第二版将参数作为JIT输入并复制复用的梯度输出，PASS误差4.841e-7、12.497s（包含测试初始化，非端到端训练）。RL_PPO_JIT=1与RL_PPO_BATCH_REALIZE=1目前显式启用测试；真实B16连续3轮运行中，测试开始时基于9383f6a工作区本次代码改动。默认JIT尚未开启，结果后续追加。
 
 2026-10-17 性能适配第二阶段：B16×100 micro100/JIT梯度/合并提交连续3轮PASS、60次Adam更新，后两轮55.729/61.869 samples/s；B32相同执行选项连续3轮PASS、60更新，后两轮91.606/100.630 samples/s，检查点已保存。测试开始时均为e820381之前/之后本次工作区，全部源改动由Git提交追踪。新增裁剪+Adam TinyJit（所有参数、状态与动态学习率显式输入）与rollout策略TinyJit（噪声显式输入，输出独立复制保留历史），参数/Adam状态对照PASS4.841e-7，11.410s；64环境12次rollout缓存测试PASS误差0，覆盖观测/噪声变化、两次参数修改、历史轨迹不被覆盖。末块37样本加权对照PASS4.712e-7。B64真实仿真连续3轮测试中，目前所有JIT开关仍为测试显式设置。
+
+2026-10-17 B64首次全缓存运行在第1次采样前报TinyJit duplicate inputs，并非GPU锁死。复现确认全新参数的actor/critic部分同形随机参数共享底层Buffer；原CPU对照逐个numpy读取使该路径未暴露。修正为初始化及加载时给每个模型参数/优化器状态独立clone并逐个realize；新增train.py相同首权重snapshot顺序的fresh-init rollout回归PASS。原B64失败目录保留；run_microbatch_b64_v2_check已完成采样进入真实更新。新增性能汇总脚本，首轮排除，记录执行开关、吞吐、DRM进程engine、RSS/温度和checkpoint有限性，避免把不同优化组合误当仅并行数对照。

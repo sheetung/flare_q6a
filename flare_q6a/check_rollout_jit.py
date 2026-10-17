@@ -8,6 +8,7 @@ Tensor.manual_seed(17)
 model=ActorCritic();cfg=train_config()['algorithm']
 os.environ['RL_ROLLOUT_JIT']='1'
 trainer=PPO(model,cfg)
+trainer.params[0].numpy() # same early weight snapshot as train.py
 rng=np.random.default_rng(19)
 max_error=0.
 with Context(TRAINING=0):
