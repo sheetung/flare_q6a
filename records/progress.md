@@ -287,3 +287,7 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 静态对齐、配置、质量/拓扑PASS；实际Vulkan的26维观测、奖励分解、杆长、非连续ID重置、目标切换、超时PASS；原日志统计回归PASS，评估统计改用航点指标后回归PASS。当前无原训练进程，未主动删除旧运行数据，未自动开启长训练。新4×100训练验证结果将另行追加。
 
 原FLARE刚性任务最终默认4×100训练验证PASS：两轮、800样本、40次优化器更新，minibatch100无驱动锁死，权重变化0.0098507；见 rigid_waypoint_training_check.json，实验源码e841787。最终checkpoint记录新任务、26维、原环境配置与模型签名，原失败权重-10（实际每次-0.1）。加载评估PASS：2环境、4完整回合、sample带噪声，强制原版3步超时验证4次重置、权重不变；测试horizon0.03s已明确记录，不表示飞满15s或收敛。见 rigid_waypoint_evaluation_check.json。评估统计补充航点到达总数，保持原目标定义；统计回归PASS。旧19维悬停checkpoint在物理初始化前被拒绝。没有启动长期训练，当前没有训练/评估残留进程。
+
+2026-10-17：用户B16×100/4=400在第一轮末触发sigma断言。内核证据确认14:19:36起反复GPU lockup，offending task为该训练的rusticl queue，而非据断言推定正常学习发散；原日志无sigma数值，无法区分NaN/负值。增加每次更新前KL/梯度范数有限检查、更新后sigma实际数值与位置检查，以及ppo_failure.json。一次B16复现第一优化器更新同样锁死，已停止服务。驱动具体错误kernel未定位，未通过clamp修改原版sigma数学。
+
+当前Q6A入口在场景构建前拒绝minibatch≥200，明确记录已知200/256/400故障，低于200仍需验证，非硬件并行上限。任务、奖励、探索噪声、100步/5epochs/4minibatches默认不改。新增检查与rsl_rl原版数值对照PASS，参数最大误差4.556e-6；停止复现后OpenCL概率/裁剪/GAE恢复检查PASS；B16入口拒绝检查exit2。见b16_failure_diagnosis.json、b16_gpu_lockup_kernel.log及相关检查日志。B16大批次尚未修复，没有启动长训练。

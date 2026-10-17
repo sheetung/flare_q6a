@@ -95,7 +95,7 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 4
 
 默认800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v`，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
 
-**不要沿用旧的 -B 16 --steps 32 命令**。本板已出现minibatch200/256的GPU锁死；保留100步和4minibatches时默认4环境，对应100样本/批。增大-B需先测试。并行降低512倍意味着相同轮数的样本量也降低512倍，不能承诺与桌面原版同轮数收敛。
+**不要沿用旧的 -B 16 --steps 32 命令**。本板已出现minibatch200/256/400的GPU锁死；保留100步和4minibatches时默认4环境，对应100样本/批。当前入口在场景构建前拒绝minibatch≥200，避免重复触发已知故障；低于200不代表均已验证。增大-B需先测试。并行降低512倍意味着相同轮数的样本量也降低512倍，不能承诺与桌面原版同轮数收敛。
 
 短测试：
 
@@ -103,7 +103,7 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 4
 scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 4 --max_iterations 2
 ```
 
-训练探索噪声仍开启。`RL_PPO_BATCH_REALIZE=1` 是可选的GPU提交优化，不改变PPO公式或奖励，默认关闭。--steps/--epochs/--minibatches仍支持显式覆盖，覆盖后不再属于仅改变模型/并行数的对齐配置。
+训练探索噪声仍开启。`RL_PPO_BATCH_REALIZE=1` 是可选的GPU提交优化，不改变PPO公式或奖励，默认关闭。直接调用 `flare_q6a/train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖，覆盖后不再属于仅改变模型/并行数的对齐配置。
 
 checkpoint.npz按原版每100轮及正常训练结束保存；若提前Ctrl+C，未保存的更新会丢失。metrics.json、metrics.jsonl、training.log、TensorBoard记录训练指标；manifest.json记录命令和源码提交，config.json记录原配置与新模型/任务签名。status=PASS只表示流程校验通过。
 

@@ -1,0 +1,22 @@
+{
+  "user_run": "run_s1_waypoint_passing_rigid_20261017_141844_593845",
+  "envs": 16,
+  "steps": 100,
+  "minibatches": 4,
+  "minibatch_size": 400,
+  "completed_iterations": 0,
+  "kernel_first_lockup_utc": "2026-10-17T14:19:36Z",
+  "kernel_offending_task": "rusticl queue t / flare_q6a/train.py",
+  "conclusion": "GPU lockup confirmed before final sigma assertion; original sigma values unavailable, cannot distinguish NaN from non-positive finite values. Exact faulty generated kernel not isolated.",
+  "reproduction": "run_b16_sigma_diagnosis",
+  "reproduction_result": "GPU lockup in first optimizer step; stopped service",
+  "changes": [
+    "Check finite gradient norm and KL before optimizer",
+    "Check and report actual sigma after each optimizer step",
+    "Persist ppo_failure.json on numeric failure",
+    "Reject minibatch >=200 before scene build on current Q6A adaptation; known lockups 200/256/400, not a hardware capacity claim"
+  ],
+  "recovery_check": "b16_gpu_recovery_check.log PASS on OpenCL",
+  "parity_check": "b16_sigma_parity_check.log PASS, parameter max error 4.556030035e-6",
+  "unresolved": "B16 with original 100 steps/4 minibatches remains unsupported; no microbatch implementation or driver fix yet."
+}

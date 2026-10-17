@@ -88,7 +88,15 @@ class PPO:
                     else:
                         for p in self.params:p.grad=(p.grad*factor).realize()
                     if progress_callback:progress_callback('ppo_optimizer',epoch=epoch+1,minibatch=i+1)
+                    norm_value=float(norm.detach().item())
+                    if not math.isfinite(klval) or not math.isfinite(norm_value):
+                        raise FloatingPointError(f'PPO invalid pre-update values: epoch={epoch+1}, minibatch={i+1}, size={size}, KL={klval}, gradient_norm={norm_value}')
                     self.opt.step();self.updates+=1
+                    sigma=self.model.std.numpy()
+                    if progress_callback:progress_callback('ppo_checked',epoch=epoch+1,minibatch=i+1,
+                        minibatch_size=size,sigma=sigma.tolist(),gradient_norm=norm_value,learning_rate=self.lr)
+                    if not np.isfinite(sigma).all() or not (sigma>0).all():
+                        raise FloatingPointError(f'PPO invalid policy sigma after update {self.updates}: epoch={epoch+1}, minibatch={i+1}, size={size}, sigma={sigma.tolist()}, gradient_norm={norm_value}, lr={self.lr}')
                     if self.batch_realize:
                         stats.append(Tensor.stack(*[t.detach() for t in (total,policy,vl,entropy)]).numpy().astype(float).tolist()+[klval])
                     else:

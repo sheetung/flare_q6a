@@ -45,6 +45,11 @@ def main():
     if args.minibatches is not None:cfg['num_mini_batches']=args.minibatches
     cfg['timeout_bootstrap']=args.timeout_bootstrap
     assert cfg['num_learning_epochs']>0 and 0<cfg['num_mini_batches']<=args.envs*args.steps
+    minibatch_size=args.envs*args.steps//cfg['num_mini_batches']
+    if minibatch_size>=200:
+        p.error(f'minibatch size {minibatch_size} is blocked on this Q6A OpenCL adaptation: '
+                'GPU lockups confirmed at 200, 256 and 400 samples. '
+                'Use -B 4 with the original 100 steps / 4 minibatches; smaller sizes still require validation.')
     # Validate checkpoint mode before expensive scene construction.
     if resume:
         with np.load(resume,allow_pickle=False) as d:meta=json.loads(str(d['metadata']))
@@ -114,7 +119,14 @@ def main():
                'advantages':((ad-ad.mean())/(ad.std(correction=1)+1e-8)).detach().realize(),
                'returns':Tensor.stack(*returns[::-1]).reshape(-1).detach().realize()}
         progress('ppo_update',iteration=trainer.iteration+1)
-        stats=trainer.update(batch,progress_callback=lambda phase,**extra:progress(phase,iteration=trainer.iteration+1,**extra))
+        try:
+            stats=trainer.update(batch,progress_callback=lambda phase,**extra:progress(phase,iteration=trainer.iteration+1,**extra))
+        except (FloatingPointError, AssertionError) as error:
+            diagnostic={'error':str(error),'iteration':trainer.iteration+1,'updates':trainer.updates,
+                        'sigma':model.std.numpy().tolist(),'learning_rate':trainer.lr,
+                        'batch_shapes':{k:list(v.shape) for k,v in batch.items()}}
+            (out/'ppo_failure.json').write_text(json.dumps(diagnostic,indent=2))
+            raise
         assert np.isfinite(obs.numpy()).all()
         row=dict(iteration=trainer.iteration,samples=args.envs*args.steps,seconds=time.perf_counter()-ts,
                  resets=int(flatten(5).float().sum().item()),device='CL',
