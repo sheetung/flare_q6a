@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "scope": "genesis PPO training smoke; convergence unverified",
+  "max_weight_change": 0.025922253727912903,
+  "setup_seconds": 54.20095325799775,
+  "training_seconds": 76.58757238700127,
+  "arguments": {
+    "envs": 8,
+    "steps": 32,
+    "iterations": 2,
+    "epochs": null,
+    "minibatches": null,
+    "output": "/home/radxa/Documents/rl_radxa/records/run_rigid_hover_smoke_v2",
+    "resume": null,
+    "physics": "genesis",
+    "timeout_bootstrap": "rsl",
+    "exp_name": "rigid_hover",
+    "vis": false
+  },
+  "config": {
+    "clip_param": 0.2,
+    "desired_kl": 0.01,
+    "entropy_coef": 0.002,
+    "gamma": 0.99,
+    "lam": 0.95,
+    "learning_rate": 0.0003,
+    "max_grad_norm": 1.0,
+    "num_learning_epochs": 5,
+    "num_mini_batches": 4,
+    "schedule": "adaptive",
+    "use_clipped_value_loss": true,
+    "value_loss_coef": 1.0,
+    "timeout_bootstrap": "rsl"
+  },
+  "iteration": 2,
+  "updates": 40
+}

@@ -1,3 +1,7 @@
+# 当前训练状态（新增刚性悬停环境测试完成）
+
+rigid_hover 的物理检查、8×32 两轮训练及检查点加载评估已完成；没有启动长训练。最终测试检查点：records/run_rigid_hover_smoke_v2/checkpoint.npz，实验名 rigid_hover、19维输入。原柔性绳 checkpoint 不兼容新环境。详见 flare_q6a/README_rigid_hover.md。
+
 # 当前训练状态（2026-10-17 GPU 测试完成）
 
 本轮 GPU 测试全部结束，未启动新的长训练。16×32 合并提交版本三轮及 GPU 恢复后两轮均完成，32×32/minibatch 256 因内核 GPU lockup 停止。结果见 gpu_benchmark_results.json。旧用户训练及其检查点保留；下方为历史快照。

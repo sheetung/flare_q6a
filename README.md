@@ -248,3 +248,12 @@ RL_PPO_BATCH_REALIZE=1 scripts/run.sh scripts/long_training.py \
 这是短测候选配置，尚未验证长时稳定性和收敛。32 环境 × 32 步 / 4 minibatch（每批 256）实测触发内核 GPU lockup，已停止；此前每批 200 也失败，当前不要直接放大 minibatch。保留默认 8 环境，未自动开启长训练。
 
 性能记录见 `records/gpu_benchmark_results.json`、`records/gpu_batch_parity.log`、`records/gpu_benchmark_kernel_error.txt`。可用 `python3 scripts/benchmark_report.py records/<运行目录>` 重新统计。DRM 计数器短窗口可能因延迟结算超过 100%，不能当成真实满载；报告保留原始异常，使用较长窗口和吞吐比较，不将百分比截断伪装成满载。阶段归属仅为监控采样时的进度，并非精确 GPU profiler。
+
+## 单段刚性杆悬停（新增任务）
+
+新环境 `rigid_hover` 使用单段刚性杆、无人机端自由转动、负载端固定，负载在固定点悬停且保持无人机正下方。输入为无人机位置/速度/姿态/角速度与负载位置/速度，共 19 维；原柔性绳航点环境保留。详细输入顺序、动作、奖励、运行和测试说明见 [刚性杆悬停说明](flare_q6a/README_rigid_hover.md)。
+
+```bash
+RL_PPO_BATCH_REALIZE=1 scripts/run.sh scripts/long_training.py \
+  -e rigid_hover -B 8 --steps 32 --max_iterations 500
+```

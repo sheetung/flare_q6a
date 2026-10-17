@@ -1,0 +1,5 @@
+[GsTaichi] version 4.6.0, llvm 20.1.0, commit 72f02b06, linux, python 3.12.3
+phase: rigid hover Genesis Vulkan init
+[38;5;226m[Genesis] [07:32:22] [WARNING] No Intel XPU device available. Falling back to CPU for torch device.[0m
+phase: rigid hover scene build
+{"status": "PASS", "scope": "checkpoint reload and genesis GPU evaluation", "steps": 8, "envs": 2, "timeouts": 4, "device": "CL", "resets": 4, "mean_reward": 0.016518741846084595}

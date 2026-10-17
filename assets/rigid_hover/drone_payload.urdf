@@ -1,0 +1,207 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="rigid_payload_hover">
+  <properties arm="0.08" kf="3.16e-10" km="7.94e-12" thrust2weight="2.25" max_speed_kmh="30" gnd_eff_coeff="11.36859" prop_radius="2.31348e-2" drag_coeff_xy="9.1785e-3" drag_coeff_z="10.311e-3" dw_coeff_1="276700.18" dw_coeff_2=".16" dw_coeff_3="-.11" />
+  <material name="blue">
+    <color rgba="0.2 0.2 0.2 1" />
+  </material>
+  <material name="gray">
+    <color rgba="0.25 0.25 0.25 1" />
+  </material>
+  <material name="dark_gray">
+    <color rgba="0.2 0.2 0.2 1" />
+  </material>
+  <material name="pink">
+    <color rgba="1.0 0.2 0.8 1" />
+  </material>
+  <material name="purple">
+    <color rgba="0.8 0.2 0.8 1" />
+  </material>
+  <material name="red">
+    <color rgba="1.0 0.2 0.2 1" />
+  </material>
+  <material name="orange">
+    <color rgba="1.0 0.5 0.0 1" />
+  </material>
+  <material name="green">
+    <color rgba="0.2 0.8 0.2 1" />
+  </material>
+  <link name="world" />
+  <link name="base_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <mass value="0.3" />
+      <inertia ixx="5.6e-4" ixy="0.0" ixz="0.0" iyy="5.6e-4" iyz="0.0" izz="8.6e-4" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="../../Flare/assets/suspended_system/body.obj" scale="2.015 2.015 2.015" />
+      </geometry>
+      <material name="grey">
+        <color rgba=".5 .5 .5 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <box size=".16 .16 .05" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="fixed_to_world" type="fixed">
+    <parent link="world" />
+    <child link="base_link" />
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </joint>
+  <link name="prop0_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.08 -0.08 0" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.08 -0.08 0.0175" />
+      <geometry>
+        <mesh filename="../../Flare/assets/suspended_system/propeller0.obj" scale="2.015 2.015 2.015" />
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop0_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="prop0_link" />
+  </joint>
+  <link name="prop1_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.08 -0.08 0" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.08 -0.08 0.0175" />
+      <geometry>
+        <mesh filename="../../Flare/assets/suspended_system/propeller1.obj" scale="2.015 2.015 2.015" />
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop1_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="prop1_link" />
+  </joint>
+  <link name="prop2_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.08 0.08 0" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.08 0.08 0.0175" />
+      <geometry>
+        <mesh filename="../../Flare/assets/suspended_system/propeller2.obj" scale="2.015 2.015 2.015" />
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop2_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="prop2_link" />
+  </joint>
+  <link name="prop3_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.08 0.08 0" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.08 0.08 0.0175" />
+      <geometry>
+        <mesh filename="../../Flare/assets/suspended_system/propeller3.obj" scale="2.015 2.015 2.015" />
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop3_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="prop3_link" />
+  </joint>
+  <link name="center_of_mass_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+  <joint name="center_of_mass_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="center_of_mass_link" />
+  </joint>
+  <link name="pivot_x">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1e-05" />
+      <inertia ixx="1e-08" iyy="1e-08" izz="1e-08" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+  </link>
+  <link name="pivot_y">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1e-05" />
+      <inertia ixx="1e-08" iyy="1e-08" izz="1e-08" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+  </link>
+  <link name="rigid_rod">
+    <inertial>
+      <origin xyz="0 0 -0.24" rpy="0 0 0" />
+      <mass value="0.005" />
+      <inertia ixx="9.6e-05" iyy="9.6e-05" izz="1e-07" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.24" />
+      <geometry>
+        <cylinder length=".48" radius=".004" />
+      </geometry>
+      <material name="hover_rigid_rod">
+        <color rgba="0.2 0.3 0.9 1" />
+      </material>
+    </visual>
+  </link>
+  <link name="end_sphere">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.068" />
+      <inertia ixx="0.00017655" iyy="0.00017655" izz="0.00017655" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <sphere radius=".025" />
+      </geometry>
+      <material name="hover_end_sphere">
+        <color rgba="1 0.2 0.8 1" />
+      </material>
+    </visual>
+  </link>
+  <joint name="pivot_roll" type="continuous">
+    <parent link="center_of_mass_link" />
+    <child link="pivot_x" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <dynamics damping="0.001" friction="0" />
+  </joint>
+  <joint name="pivot_pitch" type="continuous">
+    <parent link="pivot_x" />
+    <child link="pivot_y" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.001" friction="0" />
+  </joint>
+  <joint name="pivot_yaw" type="continuous">
+    <parent link="pivot_y" />
+    <child link="rigid_rod" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="0.001" friction="0" />
+  </joint>
+  <joint name="payload_fixed" type="fixed">
+    <parent link="rigid_rod" />
+    <child link="end_sphere" />
+    <origin xyz="0 0 -0.48" rpy="0 0 0" />
+  </joint>
+</robot>

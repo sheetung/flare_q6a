@@ -255,3 +255,9 @@ TensorBoard 实时文件验证 PASS：已读到 39 个 scalar tag，包括 value
 32×32 批量提交、minibatch 256 在第一轮第一 minibatch 优化器锁死；06:02:24 UTC 内核 hangcheck 明确归因 rusticl queue t，服务立即停止且进程退出。未继续放大批次，也未修改 GPU governor/系统频率。退回 16×32 做恢复复测，全部保留旧检查点和实验目录。测试期间代码是 fd6c767 基础上的本次工作区改动，优化开关在 manifest 中记录，最终代码与汇总将一起提交。
 
 GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新，正常保存 checkpoint.npz 与 model.npz；无运行中的测试遗留。最终汇总见 gpu_benchmark_results.json。未启动长训练，未把 16 环境短测结果宣称为长期稳定或收敛。
+
+2026-10-17：新增独立实验 rigid_hover，保留原柔性绳 s1_waypoint_passing。按用户最新输入定义改为 19 维：无人机目标位置误差、世界速度、xyzw 姿态、机体系角速度、负载目标位置误差与世界速度；无话题转换或实机控制代码。固定负载目标 [0,0,0.52]、无人机正上方0.48m。单根刚性杆、负载固定，三个共点转动关节集中于无人机端，近似球铰；虚拟铰链微小质量明确记录。
+
+验证发现 Genesis 0.2.1 每个物理子步清空电机外力：一次施加RPM后推进两个内部子步导致平均推力减半。新环境改为每控制周期两次显式5ms物理步、每步重新施加同一RPM。原环境未修改。修正前 records/run_rigid_hover_smoke 标记 superseded，不作为有效动力学训练结果。修正后悬停20步高度保持，速度约1.9e-7m/s，杆长最大误差2.98e-8m。物理检查 PASS：拓扑、19维观测顺序/缩放、标称推力平衡、动作下长度约束、奖励分解、超时/失败分离与reset前终止观测。
+
+最终配置8环境×32步完成2轮/40次PPO更新，权重变化0.0259223，检查点记录任务、19维观测定义与环境配置；见 rigid_hover_training_check.json。加载检查点评估PASS：2环境8步、强制3步超时、4次timeout/reset、观测有限；见 rigid_hover_evaluation_check.log。旧航点checkpoint在场景构建前被拒绝。共享日志回归 check_metrics PASS。新任务窗口未实测、长时稳定性/收敛与真实PX4内环标定尚未验证，没有启动长期训练。

@@ -1,0 +1,24 @@
+# ENU world, FLU body. Payload target is fixed throughout the episode.
+dt: 0.01
+physics_substeps: 2
+episode_seconds: 15.0
+rod_length: 0.48
+drone_mass: 0.3
+payload_mass: 0.068
+rod_mass: 0.005
+pivot_mass: 0.00002
+payload_target: [0.0, 0.0, 0.52]
+reset_position_jitter: 0.10
+reset_swing_radians: 0.10
+max_rate: [3.0, 3.0, 2.0]
+thrust_to_weight: 2.5
+observation_schema: hover_full_state_v1
+observation_size: 19
+# drone target error /1m, drone velocity /2, quaternion xyzw, gyro FLU /5, payload target error /1m, payload velocity /2
+reward:
+  hover: 2.0
+  payload_velocity: -0.05
+  swing: -0.5
+  tilt: -0.1
+  action_change: -0.02
+  crash: -5.0

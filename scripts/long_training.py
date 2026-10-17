@@ -43,7 +43,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,default=8)
     ap.add_argument('--steps',type=int,default=32);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=500)
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600)
-    ap.add_argument('-e','--exp_name',choices=['s1_waypoint_passing'],default='s1_waypoint_passing')
+    ap.add_argument('-e','--exp_name',choices=['s1_waypoint_passing','rigid_hover'],default='s1_waypoint_passing')
     ap.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     a=ap.parse_args()
     out=Path(a.output).resolve() if a.output else ROOT/'records'/datetime.now(timezone.utc).strftime('run_'+a.exp_name+'_%Y%m%d_%H%M%S_%f')

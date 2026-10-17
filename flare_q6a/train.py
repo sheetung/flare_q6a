@@ -23,9 +23,10 @@ def main():
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--timeout-bootstrap',choices=['rsl','terminal'],default='rsl')
-    p.add_argument('-e','--exp_name',choices=['s1_waypoint_passing'],default='s1_waypoint_passing')
+    p.add_argument('-e','--exp_name',choices=['s1_waypoint_passing','rigid_hover'],default='s1_waypoint_passing')
     p.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     args=p.parse_args()
+    if args.exp_name=='rigid_hover' and args.physics!='genesis':p.error('rigid_hover requires Genesis Vulkan physics')
     if args.vis and args.physics!='genesis':p.error('-v requires --physics genesis')
     assert min(args.envs,args.steps,args.iterations)>0
     assert Device.DEFAULT=='CL','CPU training fallback forbidden'
@@ -45,12 +46,22 @@ def main():
     if resume:
         with np.load(resume,allow_pickle=False) as d:meta=json.loads(str(d['metadata']))
         if meta['run']['physics']!=args.physics:raise ValueError('resume physics mismatch')
+        if meta['run'].get('experiment','s1_waypoint_passing')!=args.exp_name:raise ValueError('resume experiment mismatch')
+        if args.exp_name=='rigid_hover':
+            if meta['run'].get('environment_config')!=yaml.safe_load((ROOT/'configs/rigid_hover.yaml').read_text()):raise ValueError('resume environment config mismatch')
     Tensor.manual_seed(1);setup_start=time.perf_counter()
-    if args.physics=='genesis':
+    if args.exp_name=='rigid_hover':
+        from rigid_hover import RigidHover
+        env=RigidHover(args.envs,show_viewer=args.vis)
+    elif args.physics=='genesis':
         from genesis_bridge import GenesisBridge
         env=GenesisBridge(args.envs,show_viewer=args.vis)
     else:env=CableEnv(args.envs)
-    model=ActorCritic();trainer=PPO(model,cfg)
+    num_obs=env.obs().shape[1]
+    model=ActorCritic(num_obs);trainer=PPO(model,cfg)
+    snapshot={'arguments':vars(args),'algorithm':cfg,'num_obs':num_obs}
+    if args.exp_name=='rigid_hover':snapshot['environment']=env.cfg
+    (out/'config.json').write_text(json.dumps(snapshot,indent=2))
     loaded_meta=trainer.load(resume) if resume else {}
     obs=env.obs();started=time.perf_counter();history=[]
     first=trainer.params[0].numpy().copy()
@@ -63,9 +74,9 @@ def main():
             old_rows=json.loads((resume.parent/'metrics.json').read_text())
             initial_time=sum(r['seconds'] for r in old_rows if r['iteration']<=trainer.iteration)
         except (OSError,ValueError,KeyError):pass
-    logger=ExperimentLogger(out,args.envs,.01,trainer.iteration+args.iterations,initial_samples,initial_time)
+    logger=ExperimentLogger(out,args.envs,getattr(env,'dt',.01),trainer.iteration+args.iterations,initial_samples,initial_time)
     logger.restore_episodes(logger_state)
-    print('Logging: completed-episode window=100; waypoint counts are not episode success rates; termination reasons may overlap.',flush=True)
+    print('Logging: completed-episode window=100; '+('hover criterion is per-step, not episode success.' if args.exp_name=='rigid_hover' else 'waypoint counts are not episode success rates; termination reasons may overlap.'),flush=True)
     for _ in range(args.iterations):
         ts=time.perf_counter();roll=[];logger.begin_iteration()
         progress('rollout',iteration=trainer.iteration+1,step=0,steps=args.steps)
@@ -94,7 +105,7 @@ def main():
         def flatten(index,width=None):
             return Tensor.stack(*[t[index] for t in roll]).reshape(-1,*(() if width is None else (width,))).detach().realize()
         ad=Tensor.stack(*advantages[::-1]).reshape(-1).realize()
-        batch={'obs':flatten(0,26),'actions':flatten(1,4),'oldlog':flatten(2),'oldvalue':flatten(3),
+        batch={'obs':flatten(0,num_obs),'actions':flatten(1,4),'oldlog':flatten(2),'oldvalue':flatten(3),
                'oldmean':flatten(6,4),'oldsigma':flatten(7,4),
                'advantages':((ad-ad.mean())/(ad.std(correction=1)+1e-8)).detach().realize(),
                'returns':Tensor.stack(*returns[::-1]).reshape(-1).detach().realize()}
@@ -106,7 +117,8 @@ def main():
                  **stats)
         row=logger.finish_iteration(row,collection_end-ts,time.perf_counter()-collection_end,float(model.std.mean().item()))
         history.append(row)
-        run={'physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state()}
+        run={'experiment':args.exp_name,'num_obs':num_obs,'observation_schema':getattr(env,'cfg',{}).get('observation_schema','flare_26'),'physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset','logger':logger.state()}
+        if args.exp_name=='rigid_hover':run['environment_config']=env.cfg
         progress('checkpoint',iteration=trainer.iteration)
         trainer.save(out/'checkpoint.npz',run)
         (out/'metrics.json').write_text(json.dumps(history,indent=2))

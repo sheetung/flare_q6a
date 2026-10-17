@@ -78,7 +78,7 @@ class ExperimentLogger:
         for key,v in info.get('reward_parts',{}).items():
             v=np.asarray(v);self.part_sums[key]=self.part_sums.get(key,0.)+float(v.sum())
             self.ep_parts.setdefault(key,np.zeros(self.n));self.ep_parts[key]+=v
-        for key in ('drone_error_m','payload_error_m','swing_deg','rope_body_deg'):
+        for key in ('drone_error_m','payload_error_m','swing_deg','rope_body_deg','hover_success','rod_length_error_m'):
             if key in info:
                 v=np.asarray(info[key]);finite=v[np.isfinite(v)];s,c=self.measures.get(key,(0.,0))
                 self.measures[key]=(s+float(finite.sum()),c+len(finite))
@@ -112,7 +112,7 @@ class ExperimentLogger:
               'Train/mean_reward':'mean_episode_reward','Train/mean_episode_length':'mean_episode_length',
               'Train/mean_step_reward':'mean_raw_reward','Task/waypoints_reached':'waypoints_reached',
               'Task/drone_error_m':'mean_drone_error_m','Task/payload_error_m':'mean_payload_error_m',
-              'Task/swing_deg':'mean_swing_deg','Task/peak_swing_deg':'peak_swing_deg',
+              'Task/swing_deg':'mean_swing_deg','Task/peak_swing_deg':'peak_swing_deg','Task/hover_fraction':'mean_hover_success','Task/rod_length_error_m':'mean_rod_length_error_m',
               'Termination/crashes':'crashes','Termination/timeouts':'timeouts_only'}
         for tag,key in tags.items():
             if row.get(key) is not None:self.writer.add_scalar(tag,row[key],row['iteration'])
@@ -136,7 +136,10 @@ class ExperimentLogger:
         add('Mean reward per step',fmt(r['mean_raw_reward'],6))
         add('Episodes completed this iteration',r['completed_episodes_this_iteration'])
         add('Crash / timeout-only resets',f"{r['crashes']} / {r['timeouts_only']}")
-        add('Waypoints reached this iteration',r['waypoints_reached'])
+        if 'mean_hover_success' in r:
+            add('Hover criterion fraction',fmt(r['mean_hover_success'],3))
+            add('Mean rod length error (m)',fmt(r['mean_rod_length_error_m'],6))
+        else:add('Waypoints reached this iteration',r['waypoints_reached'])
         for label,key in [('Mean drone target error (m)','mean_drone_error_m'),('Mean payload target error (m)','mean_payload_error_m'),('Mean swing from vertical (deg)','mean_swing_deg'),('Peak swing from vertical (deg)','peak_swing_deg'),('Mean rope/body angle (deg)','mean_rope_body_deg')]:
             if key in r:add(label,fmt(r[key],3))
         for k,v in r['episode_reward_terms'].items():add('Mean episode reward/'+k,fmt(v,6))

@@ -14,9 +14,9 @@ from tinygrad.nn.state import get_parameters, get_state_dict
 from hardware import require_adreno
 
 class ActorCritic:
-    def __init__(self):
-        self.actor=[nn.Linear(26,128),nn.Linear(128,128),nn.Linear(128,4)]
-        self.critic=[nn.Linear(26,128),nn.Linear(128,128),nn.Linear(128,1)]
+    def __init__(self,num_obs=26):
+        self.actor=[nn.Linear(num_obs,128),nn.Linear(128,128),nn.Linear(128,4)]
+        self.critic=[nn.Linear(num_obs,128),nn.Linear(128,128),nn.Linear(128,1)]
         # rsl_rl optimizes sigma directly, not log(sigma).
         self.std=Tensor.ones(4)
     def forward(self,obs):
