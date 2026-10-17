@@ -169,3 +169,18 @@ git submodule status
 目前尚未验证长时间训练稳定性、收敛和论文指标。下一步是扩大 rollout、固定评估任务、多随机种子训练和资源监控，然后才是 PX4/动捕接口、内环辨识与 sim-to-real。适配层包含 rsl_rl 算法移植，其许可证见 `flare_q6a/LICENSE.rsl_rl`；各 submodule 遵循各自上游条款，本仓库不替上游授予额外权限。
 
 详细历史见 [records/progress.md](records/progress.md)。
+
+## 长训练与资源监控
+
+后台监督器可运行固定轮数的训练，并每 5 秒记录资源数据：
+
+```bash
+scripts/run.sh scripts/long_training.py --output records/run_long_example \
+  --envs 8 --steps 100 --iterations 200
+```
+
+监督器输出 `status.json`、`manifest.json`、`telemetry.jsonl` 和 `latest_telemetry.json`；训练输出 `training.log`、`progress.json`、指标及检查点。`status.json` 记录训练 PID 和完成/失败状态；`manifest.json` 记录 Git commit 与完整命令。
+
+GPU 占用仅在内核提供 DRM engine-time 计数器时计算，否则为 null；GPU 频率单独记录，不能替代百分比。NPU 未用于训练，NPU 百分比为 null，不能伪记为已测 0%。CPU 百分比同时记录单核 100% 基准和整机容量基准。温度包含所有可读 thermal zone，最大值不一定是 GPU 温度。
+
+使用 systemd 用户服务时，任务可在聊天结束后继续；用户注销或系统重启可能终止任务。检查点可按前述方法恢复。监督器进程不做自动重启，失败会保留 exit code 和训练日志。

@@ -182,3 +182,11 @@ check_parity.py 与真实上游 PPO CPU reference 使用相同权重、轨迹和
 - 在 /tmp 的独立克隆中，从本地上游副本取出全部 3 个固定 submodule；检查点、虚拟环境和凭据未进入 Git tracked files。
 - shell 语法与 Python 编译检查通过。
 - 此验证覆盖 Git 打包和本机已安装环境，不等于另一块高通板已部署成功，也没有在新系统重装全部依赖。
+
+## 长训练启动准备
+
+用户要求启动长训练并监控资源。选择首次持续运行配置：原版 Genesis，8 个环境，每轮 100 步，200 轮，原配置 5 epochs / 4 minibatches；共请求 160,000 条仿真样本和 4,000 次 minibatch 更新。不预先承诺时长或收敛。
+
+新增 scripts/long_training.py：后台监督、每 5 秒资源采样、Git/命令 manifest、完成/失败状态；记录 GPU 频率、可用 DRM engine 利用率、进程 CPU/RSS、系统内存/swap、所有 thermal zone。没有可读占用计数器时用 null，不用频率冒充占用。NPU 未参与，记录未使用且占用未知。
+
+train.py 增加 rollout/update/checkpoint 阶段进度文件与原始奖励均值；未改变 PPO 更新公式。语法检查通过。

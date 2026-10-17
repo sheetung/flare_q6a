@@ -23,6 +23,10 @@ def main():
     assert min(args.envs,args.steps,args.iterations)>0
     assert Device.DEFAULT=='CL','CPU training fallback forbidden'
     out=Path(args.output or ROOT/'records'/('run_'+str(time.time_ns()))).resolve();out.mkdir(parents=True,exist_ok=True)
+    def progress(phase,**extra):
+        data={'phase':phase,'updated_unix':time.time(),**extra}
+        temp=out/'progress.json.tmp';temp.write_text(json.dumps(data));temp.replace(out/'progress.json')
+    progress('initializing')
     resume=Path(args.resume).resolve() if args.resume else None
     cfg=yaml.safe_load((ROOT/'Flare/config/train/s1_train_config.yaml').read_text())['algorithm']
     if args.epochs is not None:cfg['num_learning_epochs']=args.epochs
@@ -44,15 +48,18 @@ def main():
     first=trainer.params[0].numpy().copy()
     setup_seconds=started-setup_start
     for _ in range(args.iterations):
-        ts=time.perf_counter();roll=[]
+        ts=time.perf_counter();roll=[];raw_rewards=[]
+        progress('rollout',iteration=trainer.iteration+1,step=0,steps=args.steps)
         with Context(TRAINING=0):
-            for _ in range(args.steps):
+            for step in range(args.steps):
                 mean,value=model.forward(obs)
                 oldmean=mean.detach().realize()
                 oldsigma=(model.std.detach()+Tensor.zeros(args.envs,4)).realize()
                 action=(mean+Tensor.randn(args.envs,4)*model.std).detach().realize()
                 logp=model.logprob(action,mean).detach().realize();value=value.detach().realize()
                 newobs,reward,done,timeout,terminal_obs=env.step(action)
+                raw_rewards.append(reward.detach().realize())
+                if step % 10 == 0:progress('rollout',iteration=trainer.iteration+1,step=step+1,steps=args.steps)
                 if args.timeout_bootstrap=='terminal':
                     _,boot=model.forward(terminal_obs);boot=boot.detach()
                 else:boot=value # exact rsl_rl v1.0.2 process_env_step convention
@@ -71,12 +78,15 @@ def main():
                'oldmean':flatten(6,4),'oldsigma':flatten(7,4),
                'advantages':((ad-ad.mean())/(ad.std(correction=1)+1e-8)).detach().realize(),
                'returns':Tensor.stack(*returns[::-1]).reshape(-1).detach().realize()}
+        progress('ppo_update',iteration=trainer.iteration+1)
         stats=trainer.update(batch)
         assert np.isfinite(obs.numpy()).all()
         row=dict(iteration=trainer.iteration,samples=args.envs*args.steps,seconds=time.perf_counter()-ts,
-                 resets=int(flatten(5).float().sum().item()),device='CL',**stats)
+                 resets=int(flatten(5).float().sum().item()),device='CL',
+                 mean_raw_reward=float(Tensor.stack(*raw_rewards).mean().item()),**stats)
         history.append(row);print(json.dumps(row),flush=True)
         run={'physics':args.physics,'envs':args.envs,'steps':args.steps,'environment_resume':'fresh reset'}
+        progress('checkpoint',iteration=trainer.iteration)
         trainer.save(out/'checkpoint.npz',run)
         (out/'metrics.json').write_text(json.dumps(history,indent=2))
     np.savez(out/'model.npz',**{k:v.numpy() for k,v in get_state_dict(model).items()})
@@ -84,5 +94,6 @@ def main():
     result=dict(status='PASS',scope=args.physics+' PPO training smoke; convergence unverified',max_weight_change=delta,
                 setup_seconds=setup_seconds,training_seconds=time.perf_counter()-started,arguments=vars(args),config=cfg,
                 iteration=trainer.iteration,updates=trainer.updates)
+    progress('completed',iteration=trainer.iteration,updates=trainer.updates)
     (out/'result.json').write_text(json.dumps(result,indent=2));print(json.dumps(result),flush=True)
 if __name__=='__main__':main()
