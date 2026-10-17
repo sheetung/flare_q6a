@@ -10,7 +10,7 @@ from hover_observation import rotation,pack_hover
 
 class RigidHover:
     num_obs=19
-    def __init__(self,n=8,show_viewer=False):
+    def __init__(self,n=8,show_viewer=False,seed=1):
         self.n=n;self.cfg=yaml.safe_load((ROOT/'configs/rigid_hover.yaml').read_text())
         assert self.cfg['observation_size']==19 and self.cfg['observation_schema']=='hover_full_state_v1'
         assert self.cfg['dt']>0 and self.cfg['physics_substeps']>=1
@@ -49,7 +49,7 @@ class RigidHover:
             self.pivot_dofs.extend(joint.dofs_idx_local);self.pivot_qs.extend(joint.qs_idx_local)
         assert len(self.pivot_dofs)==3 and self.drone.n_qs==10
         self.age=np.zeros(n,np.int32);self.last_actions=np.zeros((n,4),np.float32)
-        self.rng=np.random.default_rng(1);self.last_step_info={}
+        self.rng=np.random.default_rng(seed);self.last_step_info={}
         self.reset(np.arange(n));self._read_state();self._obs=self._observation()
     @staticmethod
     def _tensor(a):return torch.as_tensor(np.asarray(a),dtype=torch.float32)

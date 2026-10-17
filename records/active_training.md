@@ -1,3 +1,7 @@
+# 当前状态：第154轮均值/探索策略评估完成
+
+原长训练 records/run_rigid_hover_20261017_094009_240109 进程已停止，最新完整checkpoint为154轮。本次mean/sample各16回合评估完成，两者都未稳定悬停；结果见 policy_evaluation_comparison_154.json。评估冻结权重、无训练更新，没有自动重启长训练。
+
 # 当前状态：部分重置缺陷已修复并完成对照测试
 
 用户旧长训练 records/run_rigid_hover_20261017_075550_930855 已停止，检查点和日志保留，但受到错误重置影响。新环境 reset_version=2，应从头训练。16环境×300步随机动作及非连续ID重置测试均完成，无新长训任务。详见 rigid_hover_reset_comparison.json。

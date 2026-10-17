@@ -59,3 +59,19 @@ scripts/run.sh flare_q6a/check_rigid_hover.py --physics --envs 16
 scripts/run.sh flare_q6a/diagnose_rigid_hover.py --envs 16 --steps 300 --mode random \
   --output records/run_reset_diagnosis/retest.json
 ```
+
+## 冻结策略均值评估
+
+训练保持高斯动作探索。评估默认 `--mode mean`，只执行网络输出的均值，不更新网络；也可显式 `--mode sample` 作带探索的对照。请停止训练后再评估，避免两个 GPU 仿真任务争用。
+
+```bash
+scripts/run.sh flare_q6a/evaluate.py -e rigid_hover \
+  --checkpoint records/<训练目录>/checkpoint.npz \
+  --envs 16 --episodes 16 --mode mean --seed 123
+```
+
+默认自动创建 `records/run_eval_rigid_hover_<时间戳>/`。复制并冻结被测 checkpoint，记录 SHA256、轮数、随机种子、输入配置和策略模式；`episodes.jsonl` 保存逐回合时长、回报、误差、摆角、达标比例与终止原因，`evaluation.json` 保存汇总，`progress.json` 保存进度。评估结束验证权重未变化。结果的 status=PASS 表示评估程序检查通过，不表示策略已学会悬停。`--steps` 可限制物理控制步数；指定 episodes 时默认预算足够完成各环境配额，预算不足标为 INCOMPLETE，未结束轨迹明确记为 censored，不算成功。
+
+`safe_full_duration_episodes` 只表示安全飞满15秒，不代表负载误差达标；同时检查 `mean_payload_error_m`、`mean_swing_deg` 和 `mean_hover_success`。任务均值按已完成回合的步数加权。`action_clip_fraction` 表示原始网络动作超出 [-1,1] 的分量比例。若比较 mean/sample，使用同一冻结 checkpoint 和相同 seed，但轨迹会因不同动作产生差异。
+
+每次修改在 records/progress.md 记录原因、具体行为和验证结果，并提交本地 Git；运行时快照/逐步日志保留在忽略的 records/run_*/ 目录，关键测试结果另存为受 Git 管理的记录。
