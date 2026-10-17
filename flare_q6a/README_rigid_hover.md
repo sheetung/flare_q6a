@@ -45,3 +45,17 @@ scripts/run.sh flare_q6a/evaluate.py -e rigid_hover \
 ```
 
 先使用 8 环境作为新任务的起点；此前 16 环境性能结果属于旧柔性绳任务，不能直接当成新环境基准。请只启动一个 GPU 任务。旧 26 维航点策略与新 19 维悬停策略不兼容，需重新训练。检查点保存实验名称、观测定义与环境配置；续训环境 fresh reset。这里只完成环境与训练通路，尚未证明收敛或实机可用。
+
+## 部分环境重置修复（reset_version: 2）
+
+旧重置路径在仅部分环境失败时会留下旧负载位置、速度与根部广义坐标，导致重置后一步失败连锁；先前全批重置检查未覆盖此情况。已改为一次写入完整 qpos，然后对全部连续环境 ID 刷新运动学，绕过固定 Genesis 版本的部分索引刷新问题；未重置环境的物理状态保持不变。
+
+同种子 16 环境×300 步随机动作，修复前后前104步完全相同，第105步首次正常越界；修复前1334次失败、1309次一步回合，修复后32次失败、0次一步回合、平均完成回合117.75步。见 ../records/rigid_hover_reset_comparison.json。随机动作试验不代表策略已经收敛。
+
+旧 2cec0ab 长训练受到错误重置影响，保留记录，但应从头开始新训练；reset_version 写入配置，旧环境配置的 checkpoint 默认拒绝续训。训练命令不变。
+
+```bash
+scripts/run.sh flare_q6a/check_rigid_hover.py --physics --envs 16
+scripts/run.sh flare_q6a/diagnose_rigid_hover.py --envs 16 --steps 300 --mode random \
+  --output records/run_reset_diagnosis/retest.json
+```

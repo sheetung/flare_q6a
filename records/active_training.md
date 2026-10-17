@@ -1,3 +1,7 @@
+# 当前状态：部分重置缺陷已修复并完成对照测试
+
+用户旧长训练 records/run_rigid_hover_20261017_075550_930855 已停止，检查点和日志保留，但受到错误重置影响。新环境 reset_version=2，应从头训练。16环境×300步随机动作及非连续ID重置测试均完成，无新长训任务。详见 rigid_hover_reset_comparison.json。
+
 # 当前训练状态（新增刚性悬停环境测试完成）
 
 rigid_hover 的物理检查、8×32 两轮训练及检查点加载评估已完成；没有启动长训练。最终测试检查点：records/run_rigid_hover_smoke_v2/checkpoint.npz，实验名 rigid_hover、19维输入。原柔性绳 checkpoint 不兼容新环境。详见 flare_q6a/README_rigid_hover.md。

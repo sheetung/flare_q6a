@@ -261,3 +261,9 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 验证发现 Genesis 0.2.1 每个物理子步清空电机外力：一次施加RPM后推进两个内部子步导致平均推力减半。新环境改为每控制周期两次显式5ms物理步、每步重新施加同一RPM。原环境未修改。修正前 records/run_rigid_hover_smoke 标记 superseded，不作为有效动力学训练结果。修正后悬停20步高度保持，速度约1.9e-7m/s，杆长最大误差2.98e-8m。物理检查 PASS：拓扑、19维观测顺序/缩放、标称推力平衡、动作下长度约束、奖励分解、超时/失败分离与reset前终止观测。
 
 最终配置8环境×32步完成2轮/40次PPO更新，权重变化0.0259223，检查点记录任务、19维观测定义与环境配置；见 rigid_hover_training_check.json。加载检查点评估PASS：2环境8步、强制3步超时、4次timeout/reset、观测有限；见 rigid_hover_evaluation_check.log。旧航点checkpoint在场景构建前被拒绝。共享日志回归 check_metrics PASS。新任务窗口未实测、长时稳定性/收敛与真实PX4内环标定尚未验证，没有启动长期训练。
+
+2026-10-17：用户长训33轮出现完成回合仅2–3步，排查发现新增 rigid_hover 的部分环境重置与固定 Genesis 内核不兼容，而非单纯训练慢。固定悬停16环境100步零失败；随机动作前100步也正常。延长到300步首次在105步正常越界，重置后负载仍保持1.8m误差和非零速度，随后1334次失败中1309次一步回合。
+
+根因：Genesis _kernel_forward_kinematics_links_geoms 的 ndarray for 循环使用了索引而非传入的环境ID；部分重置时新环境的分开 set_pos/set_quat/set_dofs_position 路径又会从陈旧 dofs_state.pos 重建根 qpos，并返回陈旧负载状态。改为所选环境完整 qpos 原子写入、清零广义速度，再全连续环境索引刷新 FK。未改上游子模块、奖励、探索噪声或内环增益，以保持因果对照。reset_version=2 阻止旧错误环境配置续训，建议从头训练。
+
+回归PASS：16环境非连续ID [15]、奇数ID及[0,15]重置后无人机/负载位置和速度正确，未重置环境qpos/速度保持不变；见 rigid_hover_partial_reset_checks.log。同动作种子123、初始种子1的300步修复前后前104步最大指标差0，均105步首次失败；修复后32次失败、0次一步回合、完成回合平均117.75步。详见 rigid_hover_reset_comparison.json；完整原始轨迹保留在忽略的 records/run_reset_diagnosis/。没有启动新的长期训练，尚未验证新策略收敛。

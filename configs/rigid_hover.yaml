@@ -1,6 +1,7 @@
 # ENU world, FLU body. Payload target is fixed throughout the episode.
 dt: 0.01
 physics_substeps: 2
+reset_version: 2
 episode_seconds: 15.0
 rod_length: 0.48
 drone_mass: 0.3

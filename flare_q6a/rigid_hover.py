@@ -42,10 +42,12 @@ class RigidHover:
         print('phase: rigid hover scene build',flush=True)
         self.scene.build(n_envs=n)
         self.payload=self.drone.get_link('end_sphere')
-        self.pivot_dofs=[]
+        self.pivot_dofs=[];self.pivot_qs=[]
+        self._all_envs=torch.arange(n,dtype=gs.tc_int)
         for name in ('pivot_roll','pivot_pitch','pivot_yaw'):
-            self.pivot_dofs.extend(self.drone.get_joint(name).dofs_idx_local)
-        assert len(self.pivot_dofs)==3
+            joint=self.drone.get_joint(name)
+            self.pivot_dofs.extend(joint.dofs_idx_local);self.pivot_qs.extend(joint.qs_idx_local)
+        assert len(self.pivot_dofs)==3 and self.drone.n_qs==10
         self.age=np.zeros(n,np.int32);self.last_actions=np.zeros((n,4),np.float32)
         self.rng=np.random.default_rng(1);self.last_step_info={}
         self.reset(np.arange(n));self._read_state();self._obs=self._observation()
@@ -58,10 +60,15 @@ class RigidHover:
         pos+=self.rng.uniform(-self.cfg['reset_position_jitter'],self.cfg['reset_position_jitter'],pos.shape).astype(np.float32)
         q=np.tile([1.,0.,0.,0.],(len(ids),1)).astype(np.float32)
         angles=self.rng.uniform(-self.cfg['reset_swing_radians'],self.cfg['reset_swing_radians'],(len(ids),3)).astype(np.float32)
-        self.drone.set_pos(self._tensor(pos),zero_velocity=True,envs_idx=ids.tolist())
-        self.drone.set_quat(self._tensor(q),zero_velocity=True,envs_idx=ids.tolist())
-        self.drone.set_dofs_position(self._tensor(angles),dofs_idx_local=self.pivot_dofs,zero_velocity=True,envs_idx=ids.tolist())
-        self.drone.zero_all_dofs_velocity(ids.tolist())
+        # Write generalized coordinates atomically. Old Genesis partial-FK kernel
+        # iterates ndarray indices rather than selected environment IDs. Calling
+        # individual pose/joint setters could restore stale root coordinates.
+        qpos=np.zeros((len(ids),self.drone.n_qs),np.float32)
+        qpos[:,:3]=pos;qpos[:,3:7]=q;qpos[:,self.pivot_qs]=angles
+        self.drone.set_qpos(self._tensor(qpos),zero_velocity=True,envs_idx=ids.tolist())
+        # Full contiguous refresh works around that pinned upstream kernel bug;
+        # non-reset environments retain their qpos and generalized velocities.
+        self.drone.solver._kernel_forward_kinematics_links_geoms(self._all_envs)
         self.age[ids]=0;self.last_actions[ids]=0
     def _read_state(self):
         def a(x):return x.detach().cpu().numpy().copy()
