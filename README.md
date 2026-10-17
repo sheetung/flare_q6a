@@ -108,7 +108,7 @@ scripts/run.sh flare_q6a/train.py --physics genesis \
 
 这是小规模验证，不是收敛训练配置。通过后逐步增加环境数和 rollout 长度；不要直接照搬桌面 NVIDIA 上的 2048 环境配置。
 
-不指定 `--epochs`、`--minibatches` 时，读取 FLARE 的 5 epochs、4 minibatches；默认 `--steps 100`。每次 PPO update 使用一次打乱顺序，在多个 epoch 中复用，与 rsl_rl v1.0.2 相同；不能整除 minibatch 的尾部样本会按原版规则舍弃并记录。
+不指定 `--epochs`、`--minibatches` 时，读取 FLARE 的 5 epochs、4 minibatches；默认 `--envs 8 --steps 32`，对应 minibatch=64；原版 100 步采样需单独验证当前驱动。每次 PPO update 使用一次打乱顺序，在多个 epoch 中复用，与 rsl_rl v1.0.2 相同；不能整除 minibatch 的尾部样本会按原版规则舍弃并记录。
 
 默认 `--timeout-bootstrap rsl` 匹配 v1.0.2 的当前状态 value 超时补偿。`--timeout-bootstrap terminal` 使用捕获的终止观测 value，是显式算法变体，不应与原版结果混为一谈。
 
@@ -176,7 +176,7 @@ git submodule status
 
 ```bash
 scripts/run.sh scripts/long_training.py --output records/run_long_example \
-  --envs 8 --steps 100 --iterations 200
+  --envs 8 --steps 32 --iterations 500
 ```
 
 监督器输出 `status.json`、`manifest.json`、`telemetry.jsonl` 和 `latest_telemetry.json`；训练输出 `training.log`、`progress.json`、指标及检查点。`status.json` 记录训练 PID 和完成/失败状态；`manifest.json` 记录 Git commit 与完整命令。
@@ -192,3 +192,8 @@ python3 scripts/training_status.py --output records/run_long_20261017_01 --watch
 ```
 
 `--output` 改为实际运行目录；不加 `--watch` 则输出一次。后台 systemd 用户服务可用 `systemctl --user status <服务名>` 查看，用 `systemctl --user stop <服务名>` 停止；只保留已完成轮次的检查点，未完成的轮次不会保存。
+
+
+当前 Q6A/Mesa 25.2.8 实测发现：8 环境 × 100 步、4 minibatches（每批 200）在首轮 PPO 更新触发 RustiCL GPU lockup。减至每批 64 的配置已完成多轮并保存检查点，但完整长训练仍在验证；不能把小测试 PASS 视为任意批次配置都稳定。默认采样规模已调整为 8×32。
+
+监督器支持 `--stall-timeout`（秒，默认 600；0 禁用），根据训练阶段进度判断停滞。超时会转储 Python 栈并结束实验，保留失败状态和最后已完成轮次的检查点，不会自动重启或回退 CPU。

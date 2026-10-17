@@ -211,3 +211,13 @@ train.py 增加 rollout/update/checkpoint 阶段进度文件与原始奖励均�
 暂不能确定根因，较大 minibatch=200 的 GPU kernel 是待验证因素。下一次试用 power-of-two minibatch=64：8 环境 × 32 步 / 4 minibatches，500 轮，共 128,000 条样本；5 epochs 不变。此调整不是已证实修复。
 
 增加 PPO forward/backward/optimizer 的批次进度、SIGUSR1 Python 栈转储，以及监督器 progress timeout。新实验设置 180 秒无进展则转储并终止，保留失败状态，防止把活进程误报为正常训练。
+
+### 替代长训练 02 正常推进
+
+服务 rl-flare-long-20261017-02.service 于 04:14:32 UTC 启动，源码 commit 0927d959997498068604c1917db89a20a26f7b01；8×32、500 轮、minibatch 64。
+
+已完成前 2 轮（每轮 256 样本、20 次更新），进入第 3 轮；检查点已实读验证 iteration=2、updates=40、sigma 正值且有限。前两轮耗时约 60.91 和 45.42 秒，完整实验可能数小时，尚未完成。
+
+04:17:29 UTC 的 5 秒采样窗口：GPU 进程引擎占用约 33.36%、812 MHz、RSS 约 1.15 GiB。原实验 01 服务已确认 inactive/dead，02 active/running。
+
+已把默认训练采样调整到当前已推进的 8×32/minibatch64，并在 README 标明较大批次锁死问题；仍需长期验证。当前服务通过显式参数运行，默认值调整不改变它的配置。最新入口及文件位置见 records/active_training.md。

@@ -29,7 +29,7 @@ def drm(pid):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--output',required=True);ap.add_argument('--envs',type=int,default=8)
-    ap.add_argument('--steps',type=int,default=100);ap.add_argument('--iterations',type=int,default=200)
+    ap.add_argument('--steps',type=int,default=32);ap.add_argument('--iterations',type=int,default=500)
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600);a=ap.parse_args()
     out=Path(a.output).resolve();out.mkdir(parents=True,exist_ok=True)
     if (out/'status.json').exists():raise RuntimeError('Existing supervised run directory; use a new output directory')
