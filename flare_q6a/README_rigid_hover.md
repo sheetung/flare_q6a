@@ -62,12 +62,12 @@ scripts/run.sh flare_q6a/diagnose_rigid_hover.py --envs 16 --steps 300 --mode ra
 
 ## 冻结策略均值评估
 
-训练保持高斯动作探索。评估默认 `--mode mean`，只执行网络输出的均值，不更新网络；也可显式 `--mode sample` 作带探索的对照。请停止训练后再评估，避免两个 GPU 仿真任务争用。
+训练保持高斯动作探索。评估默认 `--mode sample`，执行均值动作加已学习标准差的高斯噪声，不更新网络；显式指定 `--mode mean` 才关闭探索噪声。请停止训练后再评估，避免两个 GPU 仿真任务争用。
 
 ```bash
 scripts/run.sh flare_q6a/evaluate.py -e rigid_hover \
   --checkpoint records/<训练目录>/checkpoint.npz \
-  --envs 16 --episodes 16 --mode mean --seed 123
+  --envs 16 --episodes 16 --mode sample --seed 123
 ```
 
 默认自动创建 `records/run_eval_rigid_hover_<时间戳>/`。复制并冻结被测 checkpoint，记录 SHA256、轮数、随机种子、输入配置和策略模式；`episodes.jsonl` 保存逐回合时长、回报、误差、摆角、达标比例与终止原因，`evaluation.json` 保存汇总，`progress.json` 保存进度。评估结束验证权重未变化。结果的 status=PASS 表示评估程序检查通过，不表示策略已学会悬停。`--steps` 可限制物理控制步数；指定 episodes 时默认预算足够完成各环境配额，预算不足标为 INCOMPLETE，未结束轨迹明确记为 censored，不算成功。

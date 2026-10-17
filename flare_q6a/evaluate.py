@@ -17,7 +17,7 @@ def main():
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--envs',type=int,default=2);p.add_argument('--test-episode-steps',type=int,default=0)
     p.add_argument('-e','--exp_name',choices=['s1_waypoint_passing','rigid_hover'],default='s1_waypoint_passing')
-    p.add_argument('-v','--vis',action='store_true');p.add_argument('--mode',choices=['mean','sample'],default='mean')
+    p.add_argument('-v','--vis',action='store_true');p.add_argument('--mode',choices=['mean','sample'],default='sample',help='sample adds learned Gaussian exploration noise (default); mean disables it')
     p.add_argument('--seed',type=int,default=123);p.add_argument('--output')
     a=p.parse_args()
     if a.envs<1 or (a.episodes is not None and a.episodes<1) or (a.steps is not None and a.steps<1):p.error('envs/episodes/steps must be positive')
