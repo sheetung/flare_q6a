@@ -15,4 +15,4 @@ unset PYTHONPATH PYTHONHOME
 "$PYTHON" -m venv .venv-gpu
 .venv-gpu/bin/python -m pip install -r requirements-q6a.lock
 .venv-gpu/bin/python -m pip install -e ./Genesis --no-deps
-printf '%s\n' 'Environment ready. Next: scripts/run.sh flare_q6a/check_parity.py'
+printf '%s\n' 'Environment ready. Next: scripts/run.sh flare_q6a/tests/check_parity.py'

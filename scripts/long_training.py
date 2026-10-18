@@ -4,8 +4,8 @@ import argparse,json,os,subprocess,time,signal,sys,threading,hashlib,shutil
 from datetime import datetime,timezone
 from pathlib import Path
 import psutil
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'flare_q6a'))
-from task_config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,default_envs,train_config
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from flare_q6a.utils.config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,default_envs,train_config
 
 ROOT=Path(__file__).resolve().parents[1]
 def utc():return datetime.now(timezone.utc).isoformat()
@@ -54,7 +54,7 @@ def main():
     out.mkdir(parents=True,exist_ok=True)
     print(f'Training output: {out}',flush=True)
     if (out/'status.json').exists():raise RuntimeError('Existing supervised run directory; use a new output directory')
-    cmd=[str(ROOT/'scripts/run.sh'),'flare_q6a/train.py','--physics','genesis','--envs',str(a.envs),
+    cmd=[str(ROOT/'scripts/run.sh'),'flare_q6a/waypoint_passing_train.py','--physics','genesis','--envs',str(a.envs),
          '--steps',str(a.steps),'--iterations',str(a.iterations),'--output',str(out)]
     cmd+=['--exp_name',a.exp_name]
     if a.microbatch_size is not None:cmd+=['--microbatch-size',str(a.microbatch_size)]
@@ -65,7 +65,9 @@ def main():
     manifest={'started_utc':utc(),'git_commit':commit,'command':cmd,'samples_requested':a.envs*a.steps*a.iterations,
         'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'ppo_batch_realize':os.environ.get('RL_PPO_BATCH_REALIZE','0'),'ppo_jit':os.environ.get('RL_PPO_JIT','0'),'ppo_jit_adam':os.environ.get('RL_PPO_JIT_ADAM','0'),'rollout_jit':os.environ.get('RL_ROLLOUT_JIT','0'),'main_cpu':os.environ.get('RL_MAIN_CPU','none'),'torch_threads':os.environ.get('RL_TORCH_THREADS'),'npu':'not used by this training pipeline',
         'gpu_utilization':'DRM engine-time delta when available, otherwise null; frequency is not utilization'}
-    source_paths=[*sorted((ROOT/'flare_q6a').glob('*.py')),ROOT/'scripts/run.sh',ROOT/'scripts/long_training.py',
+    source_paths=[ROOT/'flare_q6a/waypoint_passing_train.py',ROOT/'flare_q6a/waypoint_passing_eval.py',
+        *[p for directory in ('flare_q6a',) for p in sorted((ROOT/directory).rglob('*')) if p.is_file() and p.suffix in ('.py','.yaml')],
+        ROOT/'scripts/run.sh',ROOT/'scripts/long_training.py',
         ROOT/'assets/rigid_suspended_system/rigid_suspended_system.urdf',
         ROOT/'Flare/config/train/s1_train_config.yaml',ROOT/'Flare/config/envs/s1_env_config.yaml',
         ROOT/'Flare/envs/scenario1_env.py',ROOT/'Flare/utils/mixer.py']

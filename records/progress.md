@@ -323,3 +323,13 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 2026-10-18 收尾（实验运行于10月17日）：默认2048入口10轮连续PASS，2048000样本/200次Adam更新，排除编译首轮3736.596 samples/s；峰值RSS1.014GiB、最低系统available4.516GiB、最高传感器74.3°C。B16实际续训10→11轮/200→220更新PASS，权重更新、模型/Adam有限且sigma为正，源checkpoint SHA保持不变。原PPO数值/随机数续训对照、404样本含64+37余块且8次实际全局裁剪、1025环境跨推理块/历史输出独立/bootstrap、日志统计回归均PASS。冻结GPU策略加载评估2个0.03秒测试回合PASS、权重不变，仅链路检查，非跟踪/收敛证据。README补充实测与限制，active_training更新默认配置；未启动长期训练。
 
 内核审计完成：2026-10-17 16:00:00至2026-10-18 03:17:07，journalctl -k筛选hangcheck detected gpu lockup/gpu fault/offending task无匹配（exit1正常无结果），见native_gpu_kernel_audit.log。当前rl-*运行中服务0；不代表其他类型错误已全部排除。
+
+2026-10-18 用户要求目录结构贴近原FLARE，并明确flare_q6a作为我们的工程入口。最终布局：flare_q6a/waypoint_passing_train.py、waypoint_passing_eval.py；内部envs/scenario1_rigid_env、genesis_bridge、surrogate_env；runners/ppo；utils配置/算子/硬件/日志；tests验证；config/envs与train原样复制固定上游YAML并从新位置加载。原同级Python入口保留转发兼容。根目录依赖子模块不改，assets/scripts/records保持原路径兼容。监控器使用新入口，源码快照递归包含新目录及兼容层。算法、参数、模型、记录目录与checkpoint schema保持不变。临时根目录代码布局已收回到flare_q6a，README更新目录树。
+
+迁移检查发现直接执行入口时，sys.path包含flare_q6a，内部envs/utils常规包会遮蔽上游同名namespace包。已在两包__path__追加固定上游对应目录，保留原envs.scenario1_env和utils.mixer绝对导入；自身代码仍使用flare_q6a限定导入。首轮检查失败日志保留，修复后使用独立run_layout_train_check_fixed复验。
+
+目录迁移期间旧check_env进程仍访问已移动临时根config，旧check_microbatch launcher仍引用临时tests路径，产生layout_surrogate_check/layout_ppo_check失败日志；不计作最终验证。最终限定包路径PPO对照layout_nested_ppo_check PASS，参数误差5.327e-7，404样本/64+37余块/8次实际裁剪与Adam更新。新旧静态入口、日志测试与AST/YAML一致性PASS。
+
+最终flare_q6a目录GPU训练复验PASS：run_layout_train_check_fixed，4环境×4步×1轮，20次Adam更新，模型权重变化0.004976；状态completed，manifest源码快照包含入口/envs/runners/utils/config全部实际实现。小规模只验证迁移执行链路，不作性能或收敛结论。根目录 .gitignore 为用户原有修改，不纳入本次提交。
+
+旧flare_q6a/evaluate.py入口加载迁移前第10轮checkpoint并在真实GPU完成2个0.03秒测试回合PASS，冻结权重不变，见layout_frozen_evaluation_check.json。仅检查兼容与执行，不作为跟踪效果。两份YAML保留原上游字节（含原行尾空格），git diff --check排除这两份导入文件后通过，其余代码检查无空白问题。

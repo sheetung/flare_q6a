@@ -1,0 +1,27 @@
+################################################################################
+                            Learning iteration 1/10
+
+                        Computation: 2.0 steps/s (collection 1.00s, learning 2.00s)
+                Value function loss: 0.2000
+                     Surrogate loss: -0.1000
+                                 KL: 0.0100
+              Mean action noise std: 0.9000
+                      Learning rate: 1.000e-03
+           Completed episode window: 2
+    Mean reward (last 100 episodes): 7.5000
+                Mean episode length: 2.5 steps / 0.03s
+               Mean reward per step: 2.333333
+  Episodes completed this iteration: 2
+        Crash / timeout-only resets: 0 / 0
+   Waypoints reached this iteration: 0
+     Peak swing from vertical (deg): N/A (no completed episodes yet)
+         Mean episode reward/target: 7.500000
+            Mean step reward/target: 2.333333
+   Termination causes (may overlap): none
+--------------------------------------------------------------------------------
+                    Total timesteps: 6
+                Total training time: 3.0s
+            ETA (recent iterations): 0.01 hours
+                         Checkpoint: /tmp/tmpzn5evxui/checkpoint.npz
+
+{"status": "PASS", "checks": ["reward tap preserves outputs/state", "pre-reset termination diagnostics", "episode boundaries across steps", "weighted reward decomposition", "TensorBoard scalar values"]}

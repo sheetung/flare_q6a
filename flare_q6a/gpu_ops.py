@@ -1,27 +1,11 @@
-"""Linear-cost GPU row lookup for detached PPO rollout storage.
+"""Compatibility entry; implementation: flare_q6a/utils/gpu_ops.py."""
+import importlib
+import runpy
+import sys
+from pathlib import Path
 
-Pinned tinygrad 0.14 advanced Tensor indexing uses one-hot masking and a
-reduction over every source row. This kernel performs one indexed load per
-output element and participates in tinygrad scheduling/JIT capture.
-"""
-from tinygrad import Tensor,dtypes
-from tinygrad.uop.ops import UOp,KernelInfo,AxisType
-
-def _take_rows_kernel(out:UOp,source:UOp,index:UOp):
-    width=source.numel()//source.shape[0]
-    group=UOp.range((out.numel()+127)//128,0,AxisType.GLOBAL)
-    lane=UOp.range(128,1,AxisType.LOCAL)
-    raw=group*128+lane
-    i=raw.minimum(out.numel()-1)
-    row=index.flatten().index(i//width).load().cast(dtypes.weakint)
-    value=source.flatten().index(row*width+i%width).load()
-    return out.flatten().index(raw.valid(raw<out.numel())).store(value).end(group,lane).sink(arg=KernelInfo(name='ppo_take_rows',opts_to_apply=()))
-
-def take_rows(source:Tensor,index:Tensor):
-    """Select nonnegative in-bounds row indices; no gradient to rollout data."""
-    if not source.device.startswith('CL') or index.device!=source.device:raise ValueError('take_rows requires same OpenCL device')
-    if index.ndim!=1 or index.dtype!=dtypes.int32:raise ValueError('take_rows expects one-dimensional int32 indices')
-    if source.ndim<1 or source.shape[0]<1:raise ValueError('empty source rows')
-    shape=(index.shape[0],*source.shape[1:])
-    out=Tensor.empty(*shape,device=source.device,dtype=source.dtype).is_param_(False)
-    return out.custom_kernel(source.detach().contiguous(),index.detach().contiguous(),fxn=_take_rows_kernel)[0].detach()
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+if __name__ == "__main__":
+    runpy.run_module("flare_q6a.utils.gpu_ops", run_name="__main__")
+else:
+    sys.modules[__name__] = importlib.import_module("flare_q6a.utils.gpu_ops")

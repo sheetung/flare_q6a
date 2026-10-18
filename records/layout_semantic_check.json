@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "scope": "AST unchanged except import paths, root resolution and config location; YAML byte-identical to upstream",
+  "files": {
+    "waypoint_passing_train.py": true,
+    "waypoint_passing_eval.py": true,
+    "envs/surrogate_env.py": true,
+    "envs/genesis_bridge.py": true,
+    "envs/scenario1_rigid_env.py": true,
+    "runners/ppo.py": true,
+    "utils/gpu_ops.py": true,
+    "utils/hardware.py": true,
+    "utils/metrics.py": true,
+    "utils/evaluation_metrics.py": true,
+    "utils/config.py": true
+  }
+}

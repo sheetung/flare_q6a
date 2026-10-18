@@ -4,6 +4,43 @@
 
 已验证硬件平台：Radxa Dragon Q6A / Ubuntu 24.04 ARM64 / Python 3.12 / Adreno 643。Vulkan物理和OpenCL PPO在GPU运行；原FLARE观测、奖励、PID/mixer和跨框架数据搬运使用CPU。NPU未接入，代码不连接PX4或发送实飞指令。其他高通板必须重新验证真实GPU驱动与数值/物理测试。
 
+## 工程目录（沿用 FLARE 的组织习惯）
+
+```text
+rl_radxa/
+├── .venv-gpu/                 # Python虚拟环境
+├── Flare/                     # 固定版本原FLARE参考
+├── Genesis/                   # 固定版本物理引擎
+├── rsl_rl_reference/          # 原PPO数值对照
+├── flare_q6a/                 # 我们的高通适配工程入口
+│   ├── waypoint_passing_train.py
+│   ├── waypoint_passing_eval.py
+│   ├── envs/
+│   │   ├── scenario1_rigid_env.py # 刚性吊挂航点环境
+│   │   ├── genesis_bridge.py     # Vulkan物理/OpenCL接口
+│   │   └── surrogate_env.py      # 实验替代环境
+│   ├── config/
+│   │   ├── envs/s1_env_config.yaml
+│   │   └── train/s1_train_config.yaml
+│   ├── runners/ppo.py         # OpenCL Actor/Critic与PPO
+│   ├── utils/                 # 配置、GPU算子、硬件和日志
+│   ├── tests/                 # 物理、数值和日志验证
+│   └── train.py / evaluate.py # 旧入口兼容转发
+├── assets/                    # 独立刚性模型
+├── scripts/                   # 部署、启动和资源监控工具
+└── records/                   # 训练输出、验证结果和修改记录
+```
+
+适配代码集中在 `flare_q6a/`，不修改上游子模块。根目录的模型、部署工具和记录路径继续兼容已有命令和检查点。`flare_q6a/config/` 两份YAML从固定上游原样迁入，运行时从这里加载；刚性任务仅在加载后将内部自由度设为3。旧的 `flare_q6a/*.py` 路径保留转发兼容，实际代码在内部分类目录。
+
+直接训练（入口命名与原FLARE一致）：
+
+```bash
+scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing_rigid -B 2048
+```
+
+需要资源监控、源码快照和终端日志时，继续使用 `scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid`。两者调用同一训练实现。
+
 ## 与原 FLARE 的对应关系
 
 | 项目 | 原版 | 当前默认 |
@@ -25,7 +62,7 @@
 
 奖励使用原六项和原权重：target=10、smooth=-0.0001、yaw=0.01、angular=-0.0002、crash=-10、cable_angle_safety=0.03；全部按原逻辑乘dt=0.01，失败实际扣0.1，没有悬停版的-1/-5惩罚。原角速度PID、混控、RPM换算、100Hz及内部2子步保持不变，不套用已删除悬停环境的控制器或逐子步推力补偿。
 
-高通后端仍需GsTaichi兼容层与tinygrad PPO移植，不能在本机直接使用原CUDA训练器。原PPO移植已做rsl_rl v1.0.2数值对照，含原版51200样本逻辑minibatch。GPU行索引采用原生间接读取，避免tinygrad默认one-hot全扫描；参数/梯度缓冲独立物化，配合JIT复用执行图。刚性环境 `rigid_waypoint_env.py` 从固定上游源码派生；AST检查确保除构造和重置外全部方法一致。部分重置采用完整qpos写入和全连续ID运动学刷新，绕过已确认的旧Genesis部分ID刷新缺陷。上游子模块不改写。
+高通后端仍需GsTaichi兼容层与tinygrad PPO移植，不能在本机直接使用原CUDA训练器。原PPO移植已做rsl_rl v1.0.2数值对照，含原版51200样本逻辑minibatch。GPU行索引采用原生间接读取，避免tinygrad默认one-hot全扫描；参数/梯度缓冲独立物化，配合JIT复用执行图。刚性环境 `flare_q6a/envs/scenario1_rigid_env.py` 从固定上游源码派生；AST检查确保除构造和重置外全部方法一致。部分重置采用完整qpos写入和全连续ID运动学刷新，绕过已确认的旧Genesis部分ID刷新缺陷。上游子模块不改写。
 
 ## 固定上游版本
 
@@ -79,13 +116,13 @@ scripts/setup.sh
 ## 4. 验证
 
 ```bash
-scripts/run.sh flare_q6a/hardware.py
-scripts/run.sh flare_q6a/check_waypoint_alignment.py
-scripts/run.sh flare_q6a/check_waypoint_alignment.py --physics
-scripts/run.sh flare_q6a/check_parity.py
-scripts/run.sh flare_q6a/check_gpu_ops.py
-scripts/run.sh flare_q6a/check_microbatch.py --samples 1600 --microbatch-size 400 --epochs 5
-scripts/run.sh flare_q6a/check_rollout_jit.py --envs 1025 --microbatch-size 4096
+scripts/run.sh flare_q6a/utils/hardware.py
+scripts/run.sh flare_q6a/tests/check_waypoint_alignment.py
+scripts/run.sh flare_q6a/tests/check_waypoint_alignment.py --physics
+scripts/run.sh flare_q6a/tests/check_parity.py
+scripts/run.sh flare_q6a/tests/check_gpu_ops.py
+scripts/run.sh flare_q6a/tests/check_microbatch.py --samples 1600 --microbatch-size 400 --epochs 5
+scripts/run.sh flare_q6a/tests/check_rollout_jit.py --envs 1025 --microbatch-size 4096
 ```
 
 对齐检查涵盖原函数AST、环境配置、质量与拓扑；物理检查涵盖26维观测、奖励分解、刚性长度、部分环境重置、目标切换和超时。PPO参考检查使用CPU PyTorch作数值参考，待测PPO仍在OpenCL GPU上执行。测试PASS不代表收敛。
@@ -117,7 +154,7 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 16 --max
 | RL_PPO_BATCH_REALIZE | 1 | 合并GPU提交 |
 | RL_MAIN_CPU | auto | 已初始化工作线程保持原亲和，主提交线程选择允许CPU中容量/频率最高核 |
 
-前四项可设为0作对照，`RL_MAIN_CPU=none` 关闭线程绑定；不修改系统governor、频率或超频。`RL_TORCH_THREADS` 可选限制CPU数据准备线程，默认不改PyTorch设置；它不控制GPU反向传播。推理块上限1024，训练块上限4096。原生GPU行索引始终启用，不依赖CPU高级索引。直接调用 `flare_q6a/train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖；修改这些超参数后与原PPO配置存在差异。
+前四项可设为0作对照，`RL_MAIN_CPU=none` 关闭线程绑定；不修改系统governor、频率或超频。`RL_TORCH_THREADS` 可选限制CPU数据准备线程，默认不改PyTorch设置；它不控制GPU反向传播。推理块上限1024，训练块上限4096。原生GPU行索引始终启用，不依赖CPU高级索引。直接调用 `flare_q6a/waypoint_passing_train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖；修改这些超参数后与原PPO配置存在差异。
 
 柔性参考任务 `-e s1_waypoint_passing` 仍默认4并行，尚未验证63自由度柔性模型的大规模配置。
 
@@ -128,7 +165,7 @@ checkpoint.npz按原版每100轮及正常训练结束保存；若提前Ctrl+C，
 ```bash
 scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid \
   --resume records/<运行目录>/checkpoint.npz --max_iterations 100
-scripts/run.sh flare_q6a/evaluate.py -e s1_waypoint_passing_rigid \
+scripts/run.sh flare_q6a/waypoint_passing_eval.py -e s1_waypoint_passing_rigid \
   --checkpoint records/<运行目录>/checkpoint.npz --envs 4 --episodes 4 --mode sample
 ```
 
