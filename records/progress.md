@@ -347,3 +347,7 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 用户补充柔性绳也加入q6a：确认实际运行envs/scenario1_env.py、assets/suspended_system/real_sus_exp.urdf及全部网格/材质已纳入q6a Git，非仅参考副本；增强对齐检查，柔性所有方法AST与原版一致、mixer/柔性URDF/环境与训练YAML逐字节一致。默认原配置训练使用这些本地资源。
 
 默认无-e入口真实GPU柔性训练PASS：s1_waypoint_passing、4环境×100步、5epochs/4minibatches、1轮400样本/20次Adam更新，权重变化0.005031、checkpoint数值有限、状态completed；初次setup64.876s、训练30.043s（含首次GPU编译，不作稳态性能）。见flex_baseline_training_check.json/log。仅短流程验证，不是收敛或长期稳定结论；未启动长期训练。
+
+2026-10-18 用户指出GPU并行已优化不应继续默认B4：B4仅是柔性模型临时未验证规模，并非当前GPU后端限制。此前2048实测属于刚性模型；现保持原柔性物理/控制/奖励/PPO，启动B128三轮原100步实测，按吞吐/内存/数值结果逐步扩大，最终按实测修订默认。
+
+柔性扩容实测完成：B128/B512各3轮PASS、每轮100步与20次Adam更新，后两轮346.7808/1117.3610 samples/s，B512约3.22倍。两档checkpoint全部数值数组有限，模型sigma均正。柔性物理共享GPU内存显著高于刚性，见flexible_parallel_validation.json最低系统available；未尝试柔性2048，也不声明512为最大容量。根据实测将DEFAULT_FLEX_ENVS由4改为512，更新help、README、默认对齐断言与active_training；显式-B仍覆盖，原柔性控制/奖励/模型/PPO超参数未改。短程3轮不证明长期稳定/收敛，没有自动启动长期训练。

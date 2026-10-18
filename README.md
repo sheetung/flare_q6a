@@ -1,6 +1,6 @@
 # FLARE on Qualcomm：原柔性绳航点跟踪基线
 
-当前默认任务恢复为原 FLARE Scenario 1 **柔性绳航点跟踪** `s1_waypoint_passing`：原模型、63内部自由度、混控/PID、观测、动作、奖励、目标与PPO参数保持原样。先比较高通GPU后端适配效果；默认仅将并行数从2048降低为4，每环境100步、5 epochs、4 minibatches、800轮不变。刚性任务作为显式选项 `-e s1_waypoint_passing_rigid` 保留，不作为这次原版基线。
+当前默认任务恢复为原 FLARE Scenario 1 **柔性绳航点跟踪** `s1_waypoint_passing`：原模型、63内部自由度、混控/PID、观测、动作、奖励、目标与PPO参数保持原样。先比较高通GPU后端适配效果；默认仅将并行数从2048降低为512，每环境100步、5 epochs、4 minibatches、800轮不变。刚性任务作为显式选项 `-e s1_waypoint_passing_rigid` 保留，不作为这次原版基线。
 
 已验证硬件平台：Radxa Dragon Q6A / Ubuntu 24.04 ARM64 / Python 3.12 / Adreno 643。Vulkan物理和OpenCL PPO在GPU运行；原FLARE观测、奖励、PID/mixer和跨框架数据搬运使用CPU。NPU未接入，代码不连接PX4或发送实飞指令。其他高通板必须重新验证真实GPU驱动与数值/物理测试。
 
@@ -40,7 +40,7 @@ rl_radxa/
 直接训练（入口命名与原FLARE一致）：
 
 ```bash
-scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing -B 4
+scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing -B 512
 ```
 
 需要资源监控、源码快照和终端日志时，继续使用 `scripts/run.sh scripts/long_training.py -e s1_waypoint_passing`。两者调用同一训练实现。
@@ -50,10 +50,10 @@ scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing -B 4
 ```bash
 scripts/run.sh scripts/long_training.py
 # 等价的显式任务选择
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 4
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 512
 ```
 
-默认带原策略随机采样噪声，观测和动作均沿用原版，不新增扰动或奖励。4并行是当前柔性基线的硬件规模选择，尚未验证柔性2048并行；下面的2048性能数据仅来自刚性任务，不能当作柔性结果。不同并行数对应不同逻辑minibatch样本数，比较学习曲线时需同时看总样本数。
+默认带原策略随机采样噪声，观测和动作均沿用原版，不新增扰动或奖励。512并行是当前柔性基线的实测硬件规模选择，尚未验证柔性2048并行；下面的2048性能数据仅来自刚性任务，不能当作柔性结果。B512对应逻辑minibatch12800样本；不同并行数对应不同逻辑minibatch样本数，比较学习曲线时需同时看总样本数。
 
 ## 刚性可选任务与原 FLARE 的对应关系
 
@@ -148,14 +148,14 @@ cd /home/radxa/Documents/rl_radxa
 scripts/run.sh scripts/long_training.py -e s1_waypoint_passing
 ```
 
-默认柔性任务4并行、800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v` 并调小-B；大规模性能测试均为headless，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
+默认柔性任务512并行、800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v` 并调小-B；大规模性能测试均为headless，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
 
-采样保留原版100步。柔性模型有63内部DOF，当前默认4并行；刚性大规模测试结果不能直接推广到柔性。早期B4限制属于旧执行图/索引路径的故障边界，不是Adreno的并行硬件上限。新适配支持大逻辑minibatch：计算块自动取 `min(逻辑minibatch,4096)`，完整minibatch累积后才统一裁剪梯度、按完整KL调节学习率、执行一次Adam；仍然每轮5×4=20次更新。`-B 16` 对应400样本整批，已通过20次更新的原版数值对照。可用 `--microbatch-size` 显式覆盖计算块，不等同于修改 `--minibatches`。不同并行数每轮样本量不同，轮数不能直接比较收敛。
+采样保留原版100步。柔性模型有63内部DOF，当前默认512并行；刚性大规模测试结果不能直接推广到柔性。早期B4限制属于旧执行图/索引路径的故障边界，不是Adreno的并行硬件上限。新适配支持大逻辑minibatch：计算块自动取 `min(逻辑minibatch,4096)`，完整minibatch累积后才统一裁剪梯度、按完整KL调节学习率、执行一次Adam；仍然每轮5×4=20次更新。`-B 16` 对应400样本整批，已通过20次更新的原版数值对照。可用 `--microbatch-size` 显式覆盖计算块，不等同于修改 `--minibatches`。不同并行数每轮样本量不同，轮数不能直接比较收敛。
 
 短测试：
 
 ```bash
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 4 --max_iterations 2
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 512 --max_iterations 2
 ```
 
 训练高斯探索噪声保持开启。`scripts/run.sh` 默认启用下列已通过数值检查的执行优化；它们不修改奖励、PPO目标或更新次数：
@@ -170,7 +170,7 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 4 --max_iterat
 
 前四项可设为0作对照，`RL_MAIN_CPU=none` 关闭线程绑定；不修改系统governor、频率或超频。`RL_TORCH_THREADS` 可选限制CPU数据准备线程，默认不改PyTorch设置；它不控制GPU反向传播。推理块上限1024，训练块上限4096。原生GPU行索引始终启用，不依赖CPU高级索引。直接调用 `flare_q6a/waypoint_passing_train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖；修改这些超参数后与原PPO配置存在差异。
 
-柔性基线任务 `-e s1_waypoint_passing` 默认4并行，尚未验证63自由度柔性模型的大规模配置。
+柔性基线任务 `-e s1_waypoint_passing` 默认512并行，尚未验证63自由度柔性模型的大规模配置。
 
 checkpoint.npz按原版每100轮及正常训练结束保存；若提前Ctrl+C，未保存的更新会丢失。metrics.json、metrics.jsonl、training.log、TensorBoard记录训练指标；manifest.json记录命令、提交、执行开关与源码SHA256，source_snapshot/保存该次代码/模型/config；config.json及checkpoint记录原配置、新模型/任务签名与实际执行设置。status=PASS只表示流程校验通过。
 
@@ -218,3 +218,14 @@ GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延�
 原 `Flare/` 已被根Git忽略，现可缺省；部署脚本不再下载它。使用 `scripts/run.sh flare_q6a/tests/check_standalone.py flex` 检查独立柔性环境；同一脚本也接受正常评估参数，审计钩子禁止读取根Flare及reference目录。训练源码快照包含本地实际模块和所有模型/网格资源。
 
 刚性对照任务仍可用 `scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid` 启动。柔性默认环境为 `flare_q6a/envs/scenario1_env.py`，柔性模型为 `flare_q6a/assets/suspended_system/real_sus_exp.urdf`，网格与材质均在同目录，运行无需根Flare。
+
+## 柔性并行实测（2026-10-18）
+
+同原柔性模型、100步/5epochs/4minibatches、GPU执行开关，两个档位各连续3轮/60次Adam更新；速度排除首轮编译后按后两轮总样本/总耗时计算：
+
+| 柔性并行数 | 样本/秒 | 结果 |
+| --- | --- | --- |
+| 128 | 346.8 | 3轮通过 |
+| **512（当前默认）** | **1117.4** | 3轮通过 |
+
+B512比B128吞吐约3.2倍；默认B4是此前未测柔性扩容的临时保守选择，现已替换。B512逻辑minibatch12800，GPU计算块最多4096，依旧每轮20次Adam更新。柔性63DOF显著增加共享内存开销，进程RSS不能覆盖全部GPU内存；不能直接套用刚性B2048。尚未测试柔性2048或硬件最大容量，-B仍可显式覆盖。详见[柔性性能报告](records/flexible_hardware_tuning_results.json)与[内存/数值验证](records/flexible_parallel_validation.json)。三轮仅验证流程和短程吞吐，不证明长期稳定或收敛。

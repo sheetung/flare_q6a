@@ -42,7 +42,7 @@ def mirror_log(path,stop):
             else:stop.wait(0.1)
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,help=f'default 4 for original flexible task; {DEFAULT_ENVS} for rigid')
+    ap=argparse.ArgumentParser();ap.add_argument('--output',help='optional run directory; default: records/run_<UTC timestamp>');ap.add_argument('-B','--num_envs','--envs',dest='envs',type=int,help=f'default {default_envs(FLEX_TASK)} for original flexible task; {DEFAULT_ENVS} for rigid')
     ap.add_argument('--steps',type=int,default=train_config()['runner']['num_steps_per_env']);ap.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS)
     ap.add_argument('--microbatch-size',type=int,help='GPU compute chunk; default auto (up to 4096), preserves logical PPO minibatches')
     ap.add_argument('--interval',type=float,default=5);ap.add_argument('--resume');ap.add_argument('--stall-timeout',type=float,default=600)

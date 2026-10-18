@@ -24,7 +24,7 @@ original=environment_config(False);rigid=environment_config(True)
 expected=json.loads(json.dumps(original));expected['env_cfg']['num_of_dofs']=3;assert rigid==expected
 cfg=train_config();assert cfg['runner']['num_steps_per_env']==100 and cfg['algorithm']['num_mini_batches']==4
 assert DEFAULT_ENVS==2048 and DEFAULT_ENVS*100//4==51200
-assert default_envs(RIGID_TASK)==2048 and default_envs(FLEX_TASK)==4
+assert default_envs(RIGID_TASK)==2048 and default_envs(FLEX_TASK)==512
 model=ET.parse(MODEL).getroot();source=ET.parse(ROOT/'flare_q6a/reference/Flare/assets/suspended_system/real_sus_exp.urdf').getroot()
 def mass(r):return sum(float(x.get('value')) for x in r.findall('link/inertial/mass'))
 assert abs(mass(source)-mass(model))<1e-10

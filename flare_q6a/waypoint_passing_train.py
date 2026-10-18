@@ -20,7 +20,7 @@ def main():
     faulthandler.enable()
     faulthandler.register(signal.SIGUSR1,all_threads=True)
     p=argparse.ArgumentParser()
-    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,help=f'default 4 for original flexible task; {DEFAULT_ENVS} for rigid')
+    p.add_argument('-B','--num_envs','--envs',dest='envs',type=int,help=f'default {default_envs(FLEX_TASK)} for original flexible task; {DEFAULT_ENVS} for rigid')
     p.add_argument('--steps',type=int,help='default: upstream runner.num_steps_per_env (100)')
     p.add_argument('--max_iterations','--iterations',dest='iterations',type=int,default=DEFAULT_ITERATIONS,help='additional iterations, including on resume')
     p.add_argument('--epochs',type=int)
