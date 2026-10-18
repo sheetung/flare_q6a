@@ -9,7 +9,7 @@
 ```text
 rl_radxa/
 ├── .venv-gpu/                 # Python虚拟环境
-├── Flare/                     # 固定版本原FLARE参考
+├── Flare/                     # 外部固定版本参考（Git忽略，部署时获取）
 ├── Genesis/                   # 固定版本物理引擎
 ├── rsl_rl_reference/          # 原PPO数值对照
 ├── flare_q6a/                 # 我们的高通适配工程入口
@@ -31,7 +31,7 @@ rl_radxa/
 └── records/                   # 训练输出、验证结果和修改记录
 ```
 
-适配代码集中在 `flare_q6a/`，不修改上游子模块。根目录的模型、部署工具和记录路径继续兼容已有命令和检查点。`flare_q6a/config/` 两份YAML从固定上游原样迁入，运行时从这里加载；刚性任务仅在加载后将内部自由度设为3。旧的 `flare_q6a/*.py` 路径保留转发兼容，实际代码在内部分类目录。
+适配代码集中在 `flare_q6a/`。原 `Flare/` 不纳入根仓库Git跟踪，由 `scripts/fetch_flare.sh` 获取固定版本；`Genesis/` 和 `rsl_rl_reference/` 仍为子模块。根目录的模型、部署工具和记录路径继续兼容已有命令和检查点。`flare_q6a/config/` 两份YAML从固定上游原样迁入，运行时从这里加载；刚性任务仅在加载后将内部自由度设为3。旧的 `flare_q6a/*.py` 路径保留转发兼容，实际代码在内部分类目录。
 
 直接训练（入口命名与原FLARE一致）：
 
@@ -85,6 +85,7 @@ cd rl_radxa
 
 ```bash
 git submodule update --init --recursive
+bash scripts/fetch_flare.sh
 ```
 
 ## 2. 准备系统和 GPU 驱动
@@ -200,3 +201,5 @@ GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延�
 核心优化是原生GPU行索引替代tinygrad高级索引的全源扫描，以及梯度、Adam和推理JIT；保留原PPO逻辑批次、全局裁剪、KL调度和更新次数。旧索引大批次曾发生GPU lockup，其高占用不算稳定结果。默认选择以有效吞吐为准，不保证占用恒定100%。
 
 实际原版PPO数值对照、非整除微块及强制梯度裁剪、断点状态恢复、跨1024推理块和bootstrap检查均通过。冻结策略加载评估仅2个0.03秒测试回合，权重不变；只验证执行链路。10轮验证不代表长期稳定、收敛或实飞通过，NPU尚未使用。
+
+原FLARE目录是外部运行依赖，已被根 `.gitignore` 忽略。`scripts/setup.sh` 自动获取并校验上述固定提交；本机已有目录会保留，提交不符则停止并提示，不会覆盖。仍需其原混控、柔性参考环境及资源路径；移除Git跟踪不等于取消运行依赖。训练快照仍记录所用上游文件以便复现。

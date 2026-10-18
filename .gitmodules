@@ -1,7 +1,3 @@
-[submodule "Flare"]
-    ignore = untracked
-    path = Flare
-    url = https://github.com/BEI11HAI/Flare.git
 [submodule "Genesis"]
     ignore = untracked
     path = Genesis

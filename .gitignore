@@ -14,3 +14,6 @@ records/my_*/
 *.egg-info/
 .DS_Store
 events.out.tfevents.*
+
+# Original FLARE is an external pinned dependency, not project source.
+/Flare/

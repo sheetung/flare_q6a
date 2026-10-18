@@ -333,3 +333,5 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 最终flare_q6a目录GPU训练复验PASS：run_layout_train_check_fixed，4环境×4步×1轮，20次Adam更新，模型权重变化0.004976；状态completed，manifest源码快照包含入口/envs/runners/utils/config全部实际实现。小规模只验证迁移执行链路，不作性能或收敛结论。根目录 .gitignore 为用户原有修改，不纳入本次提交。
 
 旧flare_q6a/evaluate.py入口加载迁移前第10轮checkpoint并在真实GPU完成2个0.03秒测试回合PASS，冻结权重不变，见layout_frozen_evaluation_check.json。仅检查兼容与执行，不作为跟踪效果。两份YAML保留原上游字节（含原行尾空格），git diff --check排除这两份导入文件后通过，其余代码检查无空白问题。
+
+2026-10-18 用户要求根Git不跟踪原Flare工程：移除Flare gitlink和.gitmodules对应条目，新增/Flare/忽略规则，保留本机目录及原有.gitignore内容。原运行时仍依赖FLARE混控/柔性参考/资源，新增scripts/fetch_flare.sh按41f03b94固定提交获取并校验；setup自动调用，已有目录不覆盖。Genesis/rsl_rl_reference子模块不变，训练源码快照仍保存使用的上游文件。README说明外部依赖部署方式。
