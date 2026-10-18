@@ -1,0 +1,30 @@
+{
+  "repository": "https://github.com/BEI11HAI/Flare",
+  "commit": "41f03b94f2f724205e5e24617010467aae2a3f98",
+  "scope": "all tracked source/config/assets/docs/image; excludes example training logs/checkpoints, Git metadata and caches",
+  "sha256": {
+    "README.md": "8ac1dd62adb584126652a9892517529ff106451c604dfd4e69dfc133c3b53209",
+    "assets/suspended_system/body.mtl": "ff8ad1126a85e34abc526feaf79585e5e89dbf056070d17e73ae8032f0201891",
+    "assets/suspended_system/body.obj": "8650e7977cc91ea9ee52a1fa7e84f29733f5d5c4a1a70110cba6cdb16c1bb27a",
+    "assets/suspended_system/material.mtl": "0d90fe7d688a6da0b82b0f8053231a1c8986de34aa839f8113ed53a610c09227",
+    "assets/suspended_system/material_0.png": "f92e59802f90e74177bee426f17c6f594452d54579158f1ff008a4cc07703d1c",
+    "assets/suspended_system/propeller0.mtl": "a9e35ebf0c58b74bf09dcf37d4c161082c900ff1f4efff4f0053d1a4b2007466",
+    "assets/suspended_system/propeller0.obj": "779c227be187dd5d9102e4bd4d051013f637fb1301612b68b44cdf48a33953d4",
+    "assets/suspended_system/propeller1.mtl": "a9e35ebf0c58b74bf09dcf37d4c161082c900ff1f4efff4f0053d1a4b2007466",
+    "assets/suspended_system/propeller1.obj": "19ee558f0cee556df5d815b7d08374ae50c0a110b53eab9a977320d92206cf29",
+    "assets/suspended_system/propeller2.mtl": "a9e35ebf0c58b74bf09dcf37d4c161082c900ff1f4efff4f0053d1a4b2007466",
+    "assets/suspended_system/propeller2.obj": "605ecec4cfee47501b3d2df93b46728f5e14d62251db58295740534d54020fc1",
+    "assets/suspended_system/propeller3.mtl": "a9e35ebf0c58b74bf09dcf37d4c161082c900ff1f4efff4f0053d1a4b2007466",
+    "assets/suspended_system/propeller3.obj": "8147a830d3f2744eeb4518f45d34da40c910657878a412303ec3688c4316a9d6",
+    "assets/suspended_system/real_sus_exp.urdf": "014d129068efcf40a31241ebaa35fa64a24008278f08be2293b354ce2b6c851d",
+    "config/envs/s1_env_config.yaml": "edaa06946e26852070255cbefd175c980d550fd29a7a232cb0353caf6b43277c",
+    "config/train/s1_train_config.yaml": "03726e45e7c275fe047ef829055921ad09ffd6fb95a40a8ecc09e5db0ed4bda8",
+    "envs/scenario1_env.py": "dbf7ffacb72d4b51e4616b9a86dea4bf0529062603419a79b17ad4f829d2ae78",
+    "image/demo.gif": "fafdae823ab00f424dae6979bbb17bf6ed44eb23a6fb2c8785922c1345a23ffb",
+    "image/methodology.png": "97af9b1b48d47d9359f27174a12990a2132f0fb8832f10573a0262d2da6ad8a6",
+    "utils/config.py": "b1f54c1d4f1c791fe5fc5c54d87e3ca7d072d749934b071eb270d1d1d337f913",
+    "utils/mixer.py": "9b767c0cac176bc5cb40212091fbcea80688cdf3687a1dc33a69fb9ac6d20379",
+    "waypoint_passing_eval.py": "8488fe4f208e313d5077b813de3dadf0c498507505062c8481cc1865fc71f261",
+    "waypoint_passing_train.py": "e581e29c91bbf28e59a7e3959f0d02d282f60e91c631b68cce7a310e2d31529e"
+  }
+}

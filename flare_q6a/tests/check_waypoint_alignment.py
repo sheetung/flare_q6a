@@ -12,7 +12,7 @@ p=argparse.ArgumentParser();p.add_argument('--physics',action='store_true');a=p.
 def methods(path):
  tree=ast.parse(path.read_text());cls=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='HoverEnv')
  return {f.name:ast.dump(f,include_attributes=False) for f in cls.body if isinstance(f,ast.FunctionDef)}
-old=methods(ROOT/'Flare/envs/scenario1_env.py');new=methods(ROOT/'flare_q6a/envs/scenario1_rigid_env.py')
+old=methods(ROOT/'flare_q6a/reference/Flare/envs/scenario1_env.py');new=methods(ROOT/'flare_q6a/envs/scenario1_rigid_env.py')
 assert old.keys()==new.keys()
 changed=[k for k in old if old[k]!=new[k]];assert sorted(changed)==['__init__','reset_idx'],changed
 original=environment_config(False);rigid=environment_config(True)
@@ -20,7 +20,7 @@ expected=json.loads(json.dumps(original));expected['env_cfg']['num_of_dofs']=3;a
 cfg=train_config();assert cfg['runner']['num_steps_per_env']==100 and cfg['algorithm']['num_mini_batches']==4
 assert DEFAULT_ENVS==2048 and DEFAULT_ENVS*100//4==51200
 assert default_envs(RIGID_TASK)==2048 and default_envs(FLEX_TASK)==4
-model=ET.parse(MODEL).getroot();source=ET.parse(ROOT/'Flare/assets/suspended_system/real_sus_exp.urdf').getroot()
+model=ET.parse(MODEL).getroot();source=ET.parse(ROOT/'flare_q6a/reference/Flare/assets/suspended_system/real_sus_exp.urdf').getroot()
 def mass(r):return sum(float(x.get('value')) for x in r.findall('link/inertial/mass'))
 assert abs(mass(source)-mass(model))<1e-10
 joints=[j for j in model.findall('joint') if j.get('type')!='fixed'];assert len(joints)==3

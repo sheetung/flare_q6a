@@ -335,3 +335,9 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 旧flare_q6a/evaluate.py入口加载迁移前第10轮checkpoint并在真实GPU完成2个0.03秒测试回合PASS，冻结权重不变，见layout_frozen_evaluation_check.json。仅检查兼容与执行，不作为跟踪效果。两份YAML保留原上游字节（含原行尾空格），git diff --check排除这两份导入文件后通过，其余代码检查无空白问题。
 
 2026-10-18 用户要求根Git不跟踪原Flare工程：移除Flare gitlink和.gitmodules对应条目，新增/Flare/忽略规则，保留本机目录及原有.gitignore内容。原运行时仍依赖FLARE混控/柔性参考/资源，新增scripts/fetch_flare.sh按41f03b94固定提交获取并校验；setup自动调用，已有目录不覆盖。Genesis/rsl_rl_reference子模块不变，训练源码快照仍保存使用的上游文件。README说明外部依赖部署方式。
+
+2026-10-18 用户要求用到及未用到的原FLARE内容均复制到q6a作参考：新增reference/Flare固定提交源码/配置/模型/网格/图片/文档快照及SOURCE.json逐文件SHA256，排除Git元数据/缓存/示例训练日志与checkpoint。实际运行独立复制envs/scenario1_env、utils/mixer、assets/suspended_system；刚性assets迁入q6a并更新视觉mesh相对路径。移除上游namespace扩展/sys.path/工作目录依赖，setup不再fetch原Flare，删除fetch脚本。训练快照递归包含全部本地源码与资源。刚性task_signature仅规范化迁移mesh路径，以兼容旧checkpoint；旧第10轮签名相同且所有模型mesh本地存在检查PASS。
+
+独立性验证PASS：审计钩子禁止Python访问根Flare及q6a/reference，旧第10轮刚性策略GPU加载/2个0.03秒回合/权重不变PASS；柔性2环境GPU场景/reset/单步26维有限观测与奖励PASS。参考快照所有文件SHA256匹配来源清单，mixer逐字节一致，柔性环境除限定mixer导入外一致。保存check_standalone.py可复验。
+
+最终监控入口真实GPU训练PASS：4环境×4步×1轮，20次Adam更新，权重变化0.004976，状态completed。manifest包含本地柔性环境/mixer/刚性URDF/网格/参考来源清单，没有根Flare文件依赖。原样复制的参考源码、mixer与模型网格保留原行尾空白，diff --check排除这些导入文件后通过；不为格式改变资源字节。

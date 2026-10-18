@@ -1,0 +1,5 @@
+{
+  "status": "PASS",
+  "legacy_checkpoint_task_signature_unchanged": true,
+  "all_rigid_and_flexible_mesh_paths_resolve_locally": true
+}

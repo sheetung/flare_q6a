@@ -6,7 +6,7 @@ import torch
 import math
 import genesis as gs
 from genesis.utils.geom import quat_to_xyz, inv_quat, transform_quat_by_quat, quat_to_R
-import utils.mixer as mixer
+import flare_q6a.utils.mixer as mixer
 
 
 def gs_rand_float(lower, upper, shape, device):
@@ -99,7 +99,7 @@ class HoverEnv:
         self.default_dofs_pos = torch.zeros((self.num_envs, self.env_cfg['num_of_dofs']), device=self.device, dtype=gs.tc_float)
 
         self.drone = self.scene.add_entity(
-            morph=gs.morphs.Drone(file=str(ROOT/"assets/rigid_suspended_system/rigid_suspended_system.urdf"), links_to_keep=["end_sphere"]),
+            morph=gs.morphs.Drone(file=str(ROOT/"flare_q6a/assets/rigid_suspended_system/rigid_suspended_system.urdf"), links_to_keep=["end_sphere"]),
             surface=gs.surfaces.Rough(
                 diffuse_texture=gs.textures.ColorTexture(
                     color=(1.0, 0.2, 0.2),

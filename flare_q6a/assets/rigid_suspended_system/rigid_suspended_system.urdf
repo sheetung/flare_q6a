@@ -35,7 +35,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="../../Flare/assets/suspended_system/body.obj" scale="2.015 2.015 2.015" />
+        <mesh filename="../suspended_system/body.obj" scale="2.015 2.015 2.015" />
       </geometry>
       <material name="grey">
         <color rgba=".5 .5 .5 1" />
@@ -62,7 +62,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0.08 -0.08 0.0175" />
       <geometry>
-        <mesh filename="../../Flare/assets/suspended_system/propeller0.obj" scale="2.015 2.015 2.015" />
+        <mesh filename="../suspended_system/propeller0.obj" scale="2.015 2.015 2.015" />
       </geometry>
     </visual>
   </link>
@@ -79,7 +79,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="-0.08 -0.08 0.0175" />
       <geometry>
-        <mesh filename="../../Flare/assets/suspended_system/propeller1.obj" scale="2.015 2.015 2.015" />
+        <mesh filename="../suspended_system/propeller1.obj" scale="2.015 2.015 2.015" />
       </geometry>
     </visual>
   </link>
@@ -96,7 +96,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="-0.08 0.08 0.0175" />
       <geometry>
-        <mesh filename="../../Flare/assets/suspended_system/propeller2.obj" scale="2.015 2.015 2.015" />
+        <mesh filename="../suspended_system/propeller2.obj" scale="2.015 2.015 2.015" />
       </geometry>
     </visual>
   </link>
@@ -113,7 +113,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0.08 0.08 0.0175" />
       <geometry>
-        <mesh filename="../../Flare/assets/suspended_system/propeller3.obj" scale="2.015 2.015 2.015" />
+        <mesh filename="../suspended_system/propeller3.obj" scale="2.015 2.015 2.015" />
       </geometry>
     </visual>
   </link>

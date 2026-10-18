@@ -9,7 +9,7 @@
 ```text
 rl_radxa/
 ├── .venv-gpu/                 # Python虚拟环境
-├── Flare/                     # 外部固定版本参考（Git忽略，部署时获取）
+├── Flare/                     # 可选原仓库，本机保留但运行不再依赖
 ├── Genesis/                   # 固定版本物理引擎
 ├── rsl_rl_reference/          # 原PPO数值对照
 ├── flare_q6a/                 # 我们的高通适配工程入口
@@ -24,14 +24,17 @@ rl_radxa/
 │   │   └── train/s1_train_config.yaml
 │   ├── runners/ppo.py         # OpenCL Actor/Critic与PPO
 │   ├── utils/                 # 配置、GPU算子、硬件和日志
-│   ├── tests/                 # 物理、数值和日志验证
+│   ├── tests/                 # 物理、数值和独立运行验证
+│   ├── assets/                # 刚性/柔性模型及本地网格
+│   ├── reference/Flare/       # 原工程源码、配置、资源和文档快照
 │   └── train.py / evaluate.py # 旧入口兼容转发
-├── assets/                    # 独立刚性模型
 ├── scripts/                   # 部署、启动和资源监控工具
 └── records/                   # 训练输出、验证结果和修改记录
 ```
 
-适配代码集中在 `flare_q6a/`。原 `Flare/` 不纳入根仓库Git跟踪，由 `scripts/fetch_flare.sh` 获取固定版本；`Genesis/` 和 `rsl_rl_reference/` 仍为子模块。根目录的模型、部署工具和记录路径继续兼容已有命令和检查点。`flare_q6a/config/` 两份YAML从固定上游原样迁入，运行时从这里加载；刚性任务仅在加载后将内部自由度设为3。旧的 `flare_q6a/*.py` 路径保留转发兼容，实际代码在内部分类目录。
+适配代码、模型和网格集中在 `flare_q6a/`，训练和部署不需要根 `Flare/`。`envs/scenario1_env.py`、`utils/mixer.py` 和柔性资源从固定上游复制；未用到的源码、配置、文档和图片也保存在 `reference/Flare/` 供对照，来源与文件SHA256见 `reference/SOURCE.json`（不复制原训练日志、检查点、Git元数据和缓存）。参考目录不参与运行。`Genesis/` 和 `rsl_rl_reference/` 仍为子模块。
+
+两份运行YAML位于 `flare_q6a/config/`，初始内容与固定上游一致；刚性任务仅在加载后将内部自由度设为3。根目录 `scripts/`、`records/` 及旧Python入口继续兼容已有命令。刚性URDF只改变网格相对路径，模型签名规范化这段路径以兼容旧checkpoint，物理参数不变。
 
 直接训练（入口命名与原FLARE一致）：
 
@@ -85,7 +88,6 @@ cd rl_radxa
 
 ```bash
 git submodule update --init --recursive
-bash scripts/fetch_flare.sh
 ```
 
 ## 2. 准备系统和 GPU 驱动
@@ -202,4 +204,4 @@ GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延�
 
 实际原版PPO数值对照、非整除微块及强制梯度裁剪、断点状态恢复、跨1024推理块和bootstrap检查均通过。冻结策略加载评估仅2个0.03秒测试回合，权重不变；只验证执行链路。10轮验证不代表长期稳定、收敛或实飞通过，NPU尚未使用。
 
-原FLARE目录是外部运行依赖，已被根 `.gitignore` 忽略。`scripts/setup.sh` 自动获取并校验上述固定提交；本机已有目录会保留，提交不符则停止并提示，不会覆盖。仍需其原混控、柔性参考环境及资源路径；移除Git跟踪不等于取消运行依赖。训练快照仍记录所用上游文件以便复现。
+原 `Flare/` 已被根Git忽略，现可缺省；部署脚本不再下载它。使用 `scripts/run.sh flare_q6a/tests/check_standalone.py flex` 检查独立柔性环境；同一脚本也接受正常评估参数，审计钩子禁止读取根Flare及reference目录。训练源码快照包含本地实际模块和所有模型/网格资源。

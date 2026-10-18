@@ -28,7 +28,6 @@ for key,value in list(sys.modules.items()):
 if not hasattr(gstaichi._lib.core,'DataType'):
     gstaichi._lib.core.DataType=gstaichi._lib.core.DataTypeCxx
 sys.path.insert(0,str(ROOT/'Genesis'))
-sys.path.insert(0,str(ROOT/'Flare'))
 import genesis as gs
 import torch
 import genesis.utils.misc as gs_misc
@@ -37,11 +36,11 @@ gs_misc._tensor_to_ext_arr_fast=gstaichi._kernels.tensor_to_ext_arr
 gs_misc._matrix_to_ext_arr_fast=gstaichi._kernels.matrix_to_ext_arr
 import yaml
 from tinygrad import Tensor
-from envs.scenario1_env import HoverEnv
+from flare_q6a.envs.scenario1_env import HoverEnv
 from flare_q6a.utils.metrics import FlareMetricsTap
 from flare_q6a.utils.config import environment_config,task_signature
 from genesis.utils.geom import quat_to_R
-import utils.mixer as mixer
+import flare_q6a.utils.mixer as mixer
 
 _original_mixer=mixer.QuadXMixer
 class CpuStagingMixer(_original_mixer):
@@ -60,7 +59,7 @@ class GenesisBridge:
         if thread_limit is not None:
             if int(thread_limit)<1:raise ValueError('RL_TORCH_THREADS must be positive')
             torch.set_num_threads(int(thread_limit))
-        os.chdir(ROOT/'Flare')
+        os.chdir(ROOT/'flare_q6a')
         print('phase: Genesis Vulkan init',flush=True)
         gs.init(backend=gs.vulkan,logging_level='warning')
         assert gstaichi.lang.impl.current_cfg().arch==gstaichi.vulkan, 'CPU physics fallback forbidden'
