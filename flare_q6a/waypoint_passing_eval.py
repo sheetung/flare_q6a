@@ -21,7 +21,7 @@ def main():
     p.add_argument('--episodes',type=int,help='total complete episodes, balanced across environments')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--envs',type=int,default=2);p.add_argument('--test-episode-steps',type=int,default=0)
-    p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=RIGID_TASK)
+    p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=FLEX_TASK)
     p.add_argument('-v','--vis',action='store_true');p.add_argument('--mode',choices=['mean','sample'],default='sample',help='sample adds learned Gaussian exploration noise (default); mean disables it')
     p.add_argument('--seed',type=int,default=123);p.add_argument('--output')
     a=p.parse_args()

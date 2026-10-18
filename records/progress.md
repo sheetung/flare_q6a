@@ -341,3 +341,9 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 独立性验证PASS：审计钩子禁止Python访问根Flare及q6a/reference，旧第10轮刚性策略GPU加载/2个0.03秒回合/权重不变PASS；柔性2环境GPU场景/reset/单步26维有限观测与奖励PASS。参考快照所有文件SHA256匹配来源清单，mixer逐字节一致，柔性环境除限定mixer导入外一致。保存check_standalone.py可复验。
 
 最终监控入口真实GPU训练PASS：4环境×4步×1轮，20次Adam更新，权重变化0.004976，状态completed。manifest包含本地柔性环境/mixer/刚性URDF/网格/参考来源清单，没有根Flare文件依赖。原样复制的参考源码、mixer与模型网格保留原行尾空白，diff --check排除这些导入文件后通过；不为格式改变资源字节。
+
+2026-10-18 用户要求先使用原柔性绳配置，控制变量比较高通GPU适配：训练/评估/监控入口默认任务改为s1_waypoint_passing，默认柔性并行4（原2048仅作为规模降低）；每环境100步、5epochs、4minibatches、800轮、原63DOF模型/观测/动作/奖励/航点/PID/mixer与策略采样噪声保持原样，不新增扰动或修正原控制器。刚性任务保留显式选项。文档区分柔性基线与历史刚性性能，旧刚性checkpoint不用于柔性续训。
+
+用户补充柔性绳也加入q6a：确认实际运行envs/scenario1_env.py、assets/suspended_system/real_sus_exp.urdf及全部网格/材质已纳入q6a Git，非仅参考副本；增强对齐检查，柔性所有方法AST与原版一致、mixer/柔性URDF/环境与训练YAML逐字节一致。默认原配置训练使用这些本地资源。
+
+默认无-e入口真实GPU柔性训练PASS：s1_waypoint_passing、4环境×100步、5epochs/4minibatches、1轮400样本/20次Adam更新，权重变化0.005031、checkpoint数值有限、状态completed；初次setup64.876s、训练30.043s（含首次GPU编译，不作稳态性能）。见flex_baseline_training_check.json/log。仅短流程验证，不是收敛或长期稳定结论；未启动长期训练。

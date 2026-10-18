@@ -15,9 +15,11 @@
 从工程根目录启动：
 
 ```bash
-scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing_rigid -B 2048
+scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing -B 4
 # 带资源监控和源码快照（原命令继续有效）
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid
+scripts/run.sh scripts/long_training.py
 ```
 
 本目录原有train.py、evaluate.py等同级Python文件只转发旧命令和导入；修改实际实现时请进入对应子目录。运行不需要根Flare/，实际环境与混控均已复制并改为本地导入。Genesis/rsl_rl_reference仍为固定子模块；模型在本目录assets/，训练记录在根records/。来源及SHA256见reference/SOURCE.json。部署说明、配置对应关系和已知限制见根目录README.md。迁移不改变PPO逻辑、参数或检查点格式。
+
+当前默认使用原柔性绳任务做硬件适配基线，原模型/奖励/目标/PID/mixer/PPO保持原样，仅降低并行到4。刚性任务需显式-e s1_waypoint_passing_rigid；其2048性能报告不是柔性性能。

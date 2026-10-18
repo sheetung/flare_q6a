@@ -15,6 +15,11 @@ def methods(path):
 old=methods(ROOT/'flare_q6a/reference/Flare/envs/scenario1_env.py');new=methods(ROOT/'flare_q6a/envs/scenario1_rigid_env.py')
 assert old.keys()==new.keys()
 changed=[k for k in old if old[k]!=new[k]];assert sorted(changed)==['__init__','reset_idx'],changed
+# Flexible baseline must preserve all upstream methods and original data.
+assert methods(ROOT/'flare_q6a/envs/scenario1_env.py')==old
+for relative in ('utils/mixer.py','assets/suspended_system/real_sus_exp.urdf',
+                 'config/envs/s1_env_config.yaml','config/train/s1_train_config.yaml'):
+ assert (ROOT/'flare_q6a'/relative).read_bytes()==(ROOT/'flare_q6a/reference/Flare'/relative).read_bytes(),relative
 original=environment_config(False);rigid=environment_config(True)
 expected=json.loads(json.dumps(original));expected['env_cfg']['num_of_dofs']=3;assert rigid==expected
 cfg=train_config();assert cfg['runner']['num_steps_per_env']==100 and cfg['algorithm']['num_mini_batches']==4
@@ -26,7 +31,8 @@ assert abs(mass(source)-mass(model))<1e-10
 joints=[j for j in model.findall('joint') if j.get('type')!='fixed'];assert len(joints)==3
 assert all(j.find('origin').get('xyz')=='0 0 0' for j in joints)
 assert model.find("joint[@name='payload_fixed']").get('type')=='fixed'
-checks=['all step/reward/target/observation/safety methods AST-identical to FLARE',
+checks=['flexible environment all methods AST-identical to FLARE; mixer/model/YAML byte-identical',
+        'all step/reward/target/observation/safety methods AST-identical to FLARE',
         'only model construction and articulated reset differ','only num_of_dofs differs in environment configuration',
         f'original PPO/100-step rollout, rigid parallel {DEFAULT_ENVS} -> logical minibatch {DEFAULT_ENVS*100//4}','total physical mass matches original model','one rigid rod, root free rotation and fixed payload']
 if a.physics:

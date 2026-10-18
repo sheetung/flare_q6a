@@ -1,6 +1,6 @@
-# FLARE on Qualcomm：刚性吊挂航点跟踪
+# FLARE on Qualcomm：原柔性绳航点跟踪基线
 
-当前任务是原 FLARE Scenario 1 航点跟踪，替换为独立的单段刚性吊挂模型；经过GPU执行适配，刚性任务默认支持原版2048并行，仍可用-B降低；自定义 rigid_hover 悬停环境及其19维输入、奖励配置已经删除，历史记录保留在 Git 与 records 中。
+当前默认任务恢复为原 FLARE Scenario 1 **柔性绳航点跟踪** `s1_waypoint_passing`：原模型、63内部自由度、混控/PID、观测、动作、奖励、目标与PPO参数保持原样。先比较高通GPU后端适配效果；默认仅将并行数从2048降低为4，每环境100步、5 epochs、4 minibatches、800轮不变。刚性任务作为显式选项 `-e s1_waypoint_passing_rigid` 保留，不作为这次原版基线。
 
 已验证硬件平台：Radxa Dragon Q6A / Ubuntu 24.04 ARM64 / Python 3.12 / Adreno 643。Vulkan物理和OpenCL PPO在GPU运行；原FLARE观测、奖励、PID/mixer和跨框架数据搬运使用CPU。NPU未接入，代码不连接PX4或发送实飞指令。其他高通板必须重新验证真实GPU驱动与数值/物理测试。
 
@@ -16,6 +16,7 @@ rl_radxa/
 │   ├── waypoint_passing_train.py
 │   ├── waypoint_passing_eval.py
 │   ├── envs/
+│   │   ├── scenario1_env.py       # 原柔性绳航点环境（默认）
 │   │   ├── scenario1_rigid_env.py # 刚性吊挂航点环境
 │   │   ├── genesis_bridge.py     # Vulkan物理/OpenCL接口
 │   │   └── surrogate_env.py      # 实验替代环境
@@ -39,14 +40,24 @@ rl_radxa/
 直接训练（入口命名与原FLARE一致）：
 
 ```bash
-scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing_rigid -B 2048
+scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing -B 4
 ```
 
-需要资源监控、源码快照和终端日志时，继续使用 `scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid`。两者调用同一训练实现。
+需要资源监控、源码快照和终端日志时，继续使用 `scripts/run.sh scripts/long_training.py -e s1_waypoint_passing`。两者调用同一训练实现。
 
-## 与原 FLARE 的对应关系
+## 原柔性基线的启动方式
 
-| 项目 | 原版 | 当前默认 |
+```bash
+scripts/run.sh scripts/long_training.py
+# 等价的显式任务选择
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 4
+```
+
+默认带原策略随机采样噪声，观测和动作均沿用原版，不新增扰动或奖励。4并行是当前柔性基线的硬件规模选择，尚未验证柔性2048并行；下面的2048性能数据仅来自刚性任务，不能当作柔性结果。不同并行数对应不同逻辑minibatch样本数，比较学习曲线时需同时看总样本数。
+
+## 刚性可选任务与原 FLARE 的对应关系
+
+| 项目 | 原版 | 刚性可选任务 |
 |---|---|---|
 | 并行环境 | 2048 | **2048（刚性实测档）** |
 | 每环境采样步数 | 100 | **100，读取原YAML** |
@@ -65,7 +76,7 @@ scripts/run.sh flare_q6a/waypoint_passing_train.py -e s1_waypoint_passing_rigid 
 
 奖励使用原六项和原权重：target=10、smooth=-0.0001、yaw=0.01、angular=-0.0002、crash=-10、cable_angle_safety=0.03；全部按原逻辑乘dt=0.01，失败实际扣0.1，没有悬停版的-1/-5惩罚。原角速度PID、混控、RPM换算、100Hz及内部2子步保持不变，不套用已删除悬停环境的控制器或逐子步推力补偿。
 
-高通后端仍需GsTaichi兼容层与tinygrad PPO移植，不能在本机直接使用原CUDA训练器。原PPO移植已做rsl_rl v1.0.2数值对照，含原版51200样本逻辑minibatch。GPU行索引采用原生间接读取，避免tinygrad默认one-hot全扫描；参数/梯度缓冲独立物化，配合JIT复用执行图。刚性环境 `flare_q6a/envs/scenario1_rigid_env.py` 从固定上游源码派生；AST检查确保除构造和重置外全部方法一致。部分重置采用完整qpos写入和全连续ID运动学刷新，绕过已确认的旧Genesis部分ID刷新缺陷。上游子模块不改写。
+高通后端仍需GsTaichi兼容层与tinygrad PPO移植，不能在本机直接使用原CUDA训练器。原PPO移植已做rsl_rl v1.0.2数值对照，含原版51200样本逻辑minibatch。GPU行索引采用原生间接读取，避免tinygrad默认one-hot全扫描；参数/梯度缓冲独立物化，配合JIT复用执行图。刚性环境 `flare_q6a/envs/scenario1_rigid_env.py` 从固定上游源码派生；AST检查确保除构造和重置外全部方法一致。刚性环境的部分重置采用完整qpos写入和全连续ID运动学刷新，绕过已确认的旧Genesis部分ID刷新缺陷。上游子模块不改写。
 
 ## 固定上游版本
 
@@ -134,17 +145,17 @@ scripts/run.sh flare_q6a/tests/check_rollout_jit.py --envs 1025 --microbatch-siz
 
 ```bash
 cd /home/radxa/Documents/rl_radxa
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing
 ```
 
-默认2048并行、800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v` 并调小-B；大规模性能测试均为headless，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
+默认柔性任务4并行、800轮、100步采样、5epochs/4minibatches；目录自动带实验名/时间戳，训练日志实时显示并保存。图形桌面需要窗口时加 `-v` 并调小-B；大规模性能测试均为headless，窗口显示仍需实机验证。需要500轮可加 `--max_iterations 500`。
 
-采样保留原版100步。早期B4限制属于旧执行图/索引路径的故障边界，不是Adreno的并行硬件上限。新适配支持大逻辑minibatch：计算块自动取 `min(逻辑minibatch,4096)`，完整minibatch累积后才统一裁剪梯度、按完整KL调节学习率、执行一次Adam；仍然每轮5×4=20次更新。`-B 16` 对应400样本整批，已通过20次更新的原版数值对照。可用 `--microbatch-size` 显式覆盖计算块，不等同于修改 `--minibatches`。不同并行数每轮样本量不同，轮数不能直接比较收敛。
+采样保留原版100步。柔性模型有63内部DOF，当前默认4并行；刚性大规模测试结果不能直接推广到柔性。早期B4限制属于旧执行图/索引路径的故障边界，不是Adreno的并行硬件上限。新适配支持大逻辑minibatch：计算块自动取 `min(逻辑minibatch,4096)`，完整minibatch累积后才统一裁剪梯度、按完整KL调节学习率、执行一次Adam；仍然每轮5×4=20次更新。`-B 16` 对应400样本整批，已通过20次更新的原版数值对照。可用 `--microbatch-size` 显式覆盖计算块，不等同于修改 `--minibatches`。不同并行数每轮样本量不同，轮数不能直接比较收敛。
 
 短测试：
 
 ```bash
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 16 --max_iterations 2
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 4 --max_iterations 2
 ```
 
 训练高斯探索噪声保持开启。`scripts/run.sh` 默认启用下列已通过数值检查的执行优化；它们不修改奖励、PPO目标或更新次数：
@@ -159,16 +170,16 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid -B 16 --max
 
 前四项可设为0作对照，`RL_MAIN_CPU=none` 关闭线程绑定；不修改系统governor、频率或超频。`RL_TORCH_THREADS` 可选限制CPU数据准备线程，默认不改PyTorch设置；它不控制GPU反向传播。推理块上限1024，训练块上限4096。原生GPU行索引始终启用，不依赖CPU高级索引。直接调用 `flare_q6a/waypoint_passing_train.py` 时 --steps/--epochs/--minibatches 支持显式覆盖；修改这些超参数后与原PPO配置存在差异。
 
-柔性参考任务 `-e s1_waypoint_passing` 仍默认4并行，尚未验证63自由度柔性模型的大规模配置。
+柔性基线任务 `-e s1_waypoint_passing` 默认4并行，尚未验证63自由度柔性模型的大规模配置。
 
 checkpoint.npz按原版每100轮及正常训练结束保存；若提前Ctrl+C，未保存的更新会丢失。metrics.json、metrics.jsonl、training.log、TensorBoard记录训练指标；manifest.json记录命令、提交、执行开关与源码SHA256，source_snapshot/保存该次代码/模型/config；config.json及checkpoint记录原配置、新模型/任务签名与实际执行设置。status=PASS只表示流程校验通过。
 
 ## 6. 续训与评估
 
 ```bash
-scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid \
+scripts/run.sh scripts/long_training.py -e s1_waypoint_passing \
   --resume records/<运行目录>/checkpoint.npz --max_iterations 100
-scripts/run.sh flare_q6a/waypoint_passing_eval.py -e s1_waypoint_passing_rigid \
+scripts/run.sh flare_q6a/waypoint_passing_eval.py -e s1_waypoint_passing \
   --checkpoint records/<运行目录>/checkpoint.npz --envs 4 --episodes 4 --mode sample
 ```
 
@@ -205,3 +216,5 @@ GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延�
 实际原版PPO数值对照、非整除微块及强制梯度裁剪、断点状态恢复、跨1024推理块和bootstrap检查均通过。冻结策略加载评估仅2个0.03秒测试回合，权重不变；只验证执行链路。10轮验证不代表长期稳定、收敛或实飞通过，NPU尚未使用。
 
 原 `Flare/` 已被根Git忽略，现可缺省；部署脚本不再下载它。使用 `scripts/run.sh flare_q6a/tests/check_standalone.py flex` 检查独立柔性环境；同一脚本也接受正常评估参数，审计钩子禁止读取根Flare及reference目录。训练源码快照包含本地实际模块和所有模型/网格资源。
+
+刚性对照任务仍可用 `scripts/run.sh scripts/long_training.py -e s1_waypoint_passing_rigid` 启动。柔性默认环境为 `flare_q6a/envs/scenario1_env.py`，柔性模型为 `flare_q6a/assets/suspended_system/real_sus_exp.urdf`，网格与材质均在同目录，运行无需根Flare。
