@@ -1,0 +1,25 @@
+{
+  "method": "download and extract; no system installation",
+  "packages": [
+    {
+      "file": "qcom-adreno-cl1_1.855.3+rev3+repack1-0ubuntu1_arm64.deb",
+      "identity": "Package: qcom-adreno-cl1\nVersion: 1.855.3+rev3+repack1-0ubuntu1",
+      "sha256": "2538907cfbdf50860a90db83846663f6f994de671a1df91cbbc7319badda2b49"
+    },
+    {
+      "file": "qcom-adreno-common1_1.855.3+rev3+repack1-0ubuntu1_arm64.deb",
+      "identity": "Package: qcom-adreno-common1\nVersion: 1.855.3+rev3+repack1-0ubuntu1",
+      "sha256": "8fa0eb8168bcf4de6f12d4aa9d4b62cee260cc1602762395573f45954a7f1fbe"
+    },
+    {
+      "file": "qcom-libdmabufheap_1.1.0+250131+rel1.0+nmu1_arm64.deb",
+      "identity": "Package: qcom-libdmabufheap\nVersion: 1.1.0+250131+rel1.0+nmu1",
+      "sha256": "2bf23257aadf8bd31ed6ab283966ed5fb363f084a76b1f7ffcb9035cd88e5bed"
+    },
+    {
+      "file": "qcom-property-vault_1.1.0-0ubuntu1_arm64.deb",
+      "identity": "Package: qcom-property-vault\nVersion: 1.1.0-0ubuntu1",
+      "sha256": "f0dad23b7ea105bf2790675e038b20d7b46994533fe54d2178072b1c2db953b1"
+    }
+  ]
+}

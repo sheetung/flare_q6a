@@ -64,9 +64,10 @@ def main():
     except subprocess.CalledProcessError:commit=None
     manifest={'started_utc':utc(),'git_commit':commit,'command':cmd,'samples_requested':a.envs*a.steps*a.iterations,
         'stall_timeout_seconds':a.stall_timeout,'monitor_interval_seconds':a.interval,'ppo_batch_realize':os.environ.get('RL_PPO_BATCH_REALIZE','0'),'ppo_jit':os.environ.get('RL_PPO_JIT','0'),'ppo_jit_adam':os.environ.get('RL_PPO_JIT_ADAM','0'),'rollout_jit':os.environ.get('RL_ROLLOUT_JIT','0'),'main_cpu':os.environ.get('RL_MAIN_CPU','none'),'torch_threads':os.environ.get('RL_TORCH_THREADS'),'npu':'not used by this training pipeline',
+        'opencl_driver_profile':os.environ.get('RL_OPENCL_DRIVER','default'),'opencl_loader':os.environ.get('OPENCL_PATH'),'opencl_icd_vendors':os.environ.get('OCL_ICD_VENDORS'),
         'gpu_utilization':'DRM engine-time delta when available, otherwise null; frequency is not utilization'}
     source_paths=[*[p for p in sorted((ROOT/'flare_q6a').rglob('*')) if p.is_file() and '__pycache__' not in p.parts],
-        ROOT/'scripts/run.sh',ROOT/'scripts/long_training.py']
+        ROOT/'scripts/run.sh',ROOT/'scripts/long_training.py',ROOT/'scripts/opencl_driver.sh']
     manifest['source_sha256']={}
     for path in source_paths:
         relative=path.relative_to(ROOT);target=out/'source_snapshot'/relative

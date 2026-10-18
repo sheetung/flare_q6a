@@ -229,3 +229,7 @@ GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延�
 | **512（当前默认）** | **1117.4** | 3轮通过 |
 
 B512比B128吞吐约3.2倍；默认B4是此前未测柔性扩容的临时保守选择，现已替换。B512逻辑minibatch12800，GPU计算块最多4096，依旧每轮20次Adam更新。柔性63DOF显著增加共享内存开销，进程RSS不能覆盖全部GPU内存；不能直接套用刚性B2048。尚未测试柔性2048或硬件最大容量，-B仍可显式覆盖。详见[柔性性能报告](records/flexible_hardware_tuning_results.json)与[内存/数值验证](records/flexible_parallel_validation.json)。三轮仅验证流程和短程吞吐，不证明长期稳定或收敛。
+
+## 修改记录与驱动对照
+
+每次修改随代码提交 [docs/CHANGELOG.md](docs/CHANGELOG.md)，包括原因、文件、验证与限制。隔离高通专有OpenCL对照方法见 [docs/OPENCL_COMPARISON.md](docs/OPENCL_COMPARISON.md)；默认系统驱动不因对照实验而替换。

@@ -1,0 +1,15 @@
+Actor MLP: Sequential(
+  (0): Linear(in_features=26, out_features=128, bias=True)
+  (1): Tanh()
+  (2): Linear(in_features=128, out_features=128, bias=True)
+  (3): Tanh()
+  (4): Linear(in_features=128, out_features=4, bias=True)
+)
+Critic MLP: Sequential(
+  (0): Linear(in_features=26, out_features=128, bias=True)
+  (1): Tanh()
+  (2): Linear(in_features=128, out_features=128, bias=True)
+  (3): Tanh()
+  (4): Linear(in_features=128, out_features=1, bias=True)
+)
+{"status": "PASS", "reference": "actual rsl_rl v1.0.2 CPU test-only", "training_device": "CL", "jit": true, "jit_adam": true, "batch_realize": true, "samples": 51200, "logical_minibatch_size": 12800, "microbatch_size": 4096, "epochs": 1, "adam_updates": 4, "max_grad_norm": 1.0, "clipped_updates": 0, "parameter_max_absolute_error": 3.4496188163757324e-06, "seconds": 14.097120383012225, "gpu_update_seconds_cold": 6.883109753995086, "checks": ["weighted gradient accumulation", "global gradient clipping", "Adam moments", "adaptive KL", "unchanged Adam update count"]}

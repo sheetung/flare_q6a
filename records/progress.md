@@ -351,3 +351,9 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 2026-10-18 用户指出GPU并行已优化不应继续默认B4：B4仅是柔性模型临时未验证规模，并非当前GPU后端限制。此前2048实测属于刚性模型；现保持原柔性物理/控制/奖励/PPO，启动B128三轮原100步实测，按吞吐/内存/数值结果逐步扩大，最终按实测修订默认。
 
 柔性扩容实测完成：B128/B512各3轮PASS、每轮100步与20次Adam更新，后两轮346.7808/1117.3610 samples/s，B512约3.22倍。两档checkpoint全部数值数组有限，模型sigma均正。柔性物理共享GPU内存显著高于刚性，见flexible_parallel_validation.json最低系统available；未尝试柔性2048，也不声明512为最大容量。根据实测将DEFAULT_FLEX_ENVS由4改为512，更新help、README、默认对齐断言与active_training；显式-B仍覆盖，原柔性控制/奖励/模型/PPO超参数未改。短程3轮不证明长期稳定/收敛，没有自动启动长期训练。
+
+2026-10-18 用户授权专有OpenCL对照并要求docs/CHANGELOG.md作为每次修改随提交证明：已新增CHANGELOG、补录近期提交。高通0855.3运行库及依赖仅下载/解包于忽略的records/run_opencl_driver_probe，无apt install、系统库/ICD/内核/固件改动；脚本prepare_qcom_opencl/opencl_driver可复现隔离加载，监控manifest记录profile/loader/ICD路径。GPU精确行索引PASS；PPO404样本含余块/8次实际裁剪、KL/Adam对照PASS，参数误差3.390e-7。专有驱动B512×100×3轮/60更新PASS，开始同代码Rusticl三轮对照。设备字符串QCOM自报635/MesaFD643原样归档，不据此推断更换硬件。
+
+OpenCL对照短测完成：两驱动柔性B512×100×3轮/60更新均PASS，源码哈希/算法/任务模型签名/执行配置一致且全部float checkpoint有限FP32、sigma正。排首轮，QCOM1115.041/Rusticl1028.943 samples/s（本次+8.37%）；采样35.505/35.839s，学习10.456/13.981s（学习耗时减少25.22%）。此前独立Rusticl1117.361说明跨次波动不可忽略，不能宣称稳定8%收益；热历史未控制，系统默认仍Rusticl。docs/CHANGELOG.md及OPENCL_COMPARISON记录结果、来源、文件与限制。
+
+专有驱动实际B512大小数值回归补充PASS：51200样本/逻辑批12800/micro4096/1epoch/4更新，对照原rsl_rl最大参数误差3.450e-6，见qcom_full_b512_parity_check.log。核对/etc/OpenCL/vendors仍仅rusticl.icd，qcom-adreno-cl1未系统安装；所有试验均已结束，无后台长训练。
