@@ -8,12 +8,12 @@ from ppo import ActorCritic,PPO,adapt_lr
 sys.path.insert(0,str(ROOT/'rsl_rl_reference'))
 from rsl_rl.modules import ActorCritic as ReferenceActorCritic
 from rsl_rl.algorithms import PPO as ReferencePPO
-ap=argparse.ArgumentParser();ap.add_argument('--samples',type=int,default=1600);ap.add_argument('--microbatch-size',type=int,default=100);ap.add_argument('--epochs',type=int,default=2)
+ap=argparse.ArgumentParser();ap.add_argument('--samples',type=int,default=1600);ap.add_argument('--microbatch-size',type=int,default=100);ap.add_argument('--epochs',type=int,default=2);ap.add_argument('--max-grad-norm',type=float,default=1.0);ap.add_argument('--expect-clipping',action='store_true')
 args=ap.parse_args();assert args.samples%4==0
 assert Device.DEFAULT=='CL';torch.set_num_threads(2);Tensor.manual_seed(7)
 started=time.perf_counter()
 cfg=dict(clip_param=.2,desired_kl=.01,entropy_coef=.002,gamma=.99,lam=.95,learning_rate=.0003,
-         max_grad_norm=1.,num_learning_epochs=args.epochs,num_mini_batches=4,schedule='adaptive',use_clipped_value_loss=True,value_loss_coef=1.)
+         max_grad_norm=args.max_grad_norm,num_learning_epochs=args.epochs,num_mini_batches=4,schedule='adaptive',use_clipped_value_loss=True,value_loss_coef=1.)
 m=ActorCritic();t=PPO(m,cfg,microbatch_size=args.microbatch_size)
 r=ReferenceActorCritic(26,26,4,actor_hidden_dims=[128,128],critic_hidden_dims=[128,128],activation='tanh')
 with torch.no_grad():
@@ -42,8 +42,11 @@ original_randperm=torch.randperm
 torch.randperm=lambda *a,**kw:torch.tensor(perm,device=kw.get('device','cpu'))
 try:ref.update()
 finally:torch.randperm=original_randperm
+norms=[]
+def observe(phase,**values):
+    if phase=="ppo_checked":norms.append(values["gradient_norm"])
 gpu_started=time.perf_counter()
-stats=t.update(batch,permutation=perm)
+stats=t.update(batch,permutation=perm,progress_callback=observe)
 gpu_update_seconds=time.perf_counter()-gpu_started
 parammax=0.
 for source,target in [(m.actor,r.actor),(m.critic,r.critic)]:
@@ -70,8 +73,9 @@ for k,p in enumerate(t.params):
     np.testing.assert_allclose(t.opt.v[k].numpy(),state['exp_avg_sq'].numpy(),rtol=3e-3,atol=2e-7)
 assert parammax<5e-5, f"parameter error {parammax} exceeds absolute limit"
 assert t.updates==args.epochs*4
+if args.expect_clipping:assert any(n>args.max_grad_norm for n in norms), "clipping branch not exercised"
 print(json.dumps({'status':'PASS','reference':'actual rsl_rl v1.0.2 CPU test-only',
     'training_device':'CL','jit':t.jit_enabled,'jit_adam':t.jit_adam,'batch_realize':t.batch_realize,'samples':args.samples,'logical_minibatch_size':args.samples//4,
-    'microbatch_size':args.microbatch_size,'epochs':args.epochs,'adam_updates':t.updates,
+    'microbatch_size':args.microbatch_size,'epochs':args.epochs,'adam_updates':t.updates,'max_grad_norm':args.max_grad_norm,'clipped_updates':sum(n>args.max_grad_norm for n in norms),
     'parameter_max_absolute_error':parammax,'seconds':time.perf_counter()-started,'gpu_update_seconds_cold':gpu_update_seconds,
     'checks':['weighted gradient accumulation','global gradient clipping','Adam moments','adaptive KL','unchanged Adam update count']}))

@@ -146,3 +146,20 @@ tail -f records/<运行目录>/training.log
 GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延迟出现异常，频率不是占用率；NPU未使用。每次修改的原因、行为和验证结果写入 records/progress.md 并提交本地Git。历史悬停日志/测试结果保留作审计，不是当前任务配置。
 
 其他高通板需要Linux ARM64/Python3.12/glibc≥2.38，以及真实Adreno Vulkan/OpenCL。ICD路径不同可设置 `RL_VULKAN_ICD=/绝对路径/vendor_icd.json`。驱动、轮子、计算块/并行性能、长时稳定性和收敛需重新测试；本工程尚未验证PX4实飞、NPU或第二块开发板。无需CPU训练回退，也不会自动推送远程。
+
+## 8. 本机性能验证（2026-10-17）
+
+刚性原FLARE任务，100步采样、5个epoch、4个逻辑minibatch，GPU训练块最多4096；以下速度排除首次编译轮，按总样本/总耗时计算。
+
+| 并行环境 | 连续轮数 | 稳定阶段样本/秒 |
+| --- | --- | --- |
+| 512 | 3 | 2363 |
+| 1024 | 3 | 3370 |
+| 2048 | 3 | 3774 |
+| 默认2048入口 | 10 | 3737 |
+
+默认入口共完成2,048,000样本、200次Adam更新，进程峰值RSS约1.014GiB，系统可用内存最低4.516GiB，传感器最高74.3°C。B16从第10轮追加到第11轮也通过，原checkpoint未改变。详见 [性能报告](records/hardware_tuning_results.json)、[连续验证](records/native_default_stability_check.json)、[B16续训](records/native_b16_resume_check.json)。
+
+核心优化是原生GPU行索引替代tinygrad高级索引的全源扫描，以及梯度、Adam和推理JIT；保留原PPO逻辑批次、全局裁剪、KL调度和更新次数。旧索引大批次曾发生GPU lockup，其高占用不算稳定结果。默认选择以有效吞吐为准，不保证占用恒定100%。
+
+实际原版PPO数值对照、非整除微块及强制梯度裁剪、断点状态恢复、跨1024推理块和bootstrap检查均通过。冻结策略加载评估仅2个0.03秒测试回合，权重不变；只验证执行链路。10轮验证不代表长期稳定、收敛或实飞通过，NPU尚未使用。

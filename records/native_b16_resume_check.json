@@ -1,0 +1,56 @@
+{
+  "status": "PASS",
+  "source_checkpoint_iteration": 10,
+  "source_checkpoint_sha256": "651d0162a168e41e520f3e157c8ffa04e601134266db383d17fd47443e14ab6d",
+  "source_unchanged": true,
+  "resumed_iteration": 11,
+  "updates": 220,
+  "envs": 16,
+  "steps": 100,
+  "logical_minibatch": 400,
+  "execution": {
+    "microbatch_size": 400,
+    "inference_chunk_size": 400,
+    "row_lookup": "native_opencl_index_load",
+    "cpu_staging_threads": 8,
+    "jit": true,
+    "jit_adam": true,
+    "rollout_jit": true,
+    "batch_realize": true,
+    "hardware": {
+      "name": "FD643",
+      "vendor_id": "0x5143",
+      "driver": "25.2.8-0ubuntu0.24.04.4",
+      "backend": "CL"
+    },
+    "host_dispatch": {
+      "mode": "auto",
+      "main_cpu": 7,
+      "capacity_and_max_frequency": [
+        1024,
+        2707200
+      ],
+      "original_allowed_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "scope": "calling training thread; already initialized workers retain affinity"
+    }
+  },
+  "sigma": [
+    1.027389645576477,
+    0.8732307553291321,
+    0.8582342267036438,
+    0.9863802194595337
+  ],
+  "all_model_optimizer_tensors_finite": true,
+  "max_weight_change": 0.044824209064245224,
+  "environment_restored": false,
+  "run": "/home/radxa/Documents/rl_radxa/records/run_native_b16_resume_check"
+}

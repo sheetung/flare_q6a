@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "source_commit": "16e2e56519f4bafcddec8c948a3b066a4e276721",
+  "core_source_matches_current_files": {
+    "flare_q6a/ppo.py": true,
+    "flare_q6a/gpu_ops.py": true,
+    "flare_q6a/train.py": true,
+    "flare_q6a/genesis_bridge.py": true,
+    "flare_q6a/task_config.py": true,
+    "scripts/run.sh": true,
+    "scripts/long_training.py": true
+  },
+  "run": "/home/radxa/Documents/rl_radxa/records/run_native_default_stability",
+  "iterations": 10,
+  "samples": 2048000,
+  "adam_updates": 200,
+  "steady_samples_per_second": 3736.5960866535233,
+  "peak_rss_gib": 1.0141830444335938,
+  "last_rss_gib": 1.0141792297363281,
+  "minimum_system_available_gib": 4.515850067138672,
+  "peak_sensor_celsius": 74.3,
+  "checkpoint_sha256": "651d0162a168e41e520f3e157c8ffa04e601134266db383d17fd47443e14ab6d",
+  "scope": "bounded 10-iteration execution check; not long-term stability, policy convergence or flight validation",
+  "steady_rss_range_gib": [
+    1.0133209228515625,
+    1.0141830444335938
+  ]
+}

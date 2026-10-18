@@ -1,0 +1,1221 @@
+{
+  "measurement_note": "DRM process engine-time deltas, approximate phase attribution and short-window accounting; not global GPU utilization. Steady throughput excludes first iteration. Different runtime flags are distinct configurations; short benchmarks do not prove long-term stability or convergence.",
+  "npu": "unused; current PPO backward/Adam backend is OpenCL GPU",
+  "runs": [
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_rigid_waypoint_train_check",
+      "state": "completed",
+      "source_commit": "e8417877f3eb48873efc1919364f6c53239052a5",
+      "arguments": {
+        "envs": 4,
+        "steps": 100,
+        "iterations": 2,
+        "epochs": null,
+        "minibatches": null,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_rigid_waypoint_train_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": null,
+      "runtime_flags": {
+        "ppo_batch_realize": "0",
+        "ppo_jit": null,
+        "ppo_jit_adam": null,
+        "rollout_jit": null,
+        "main_cpu": null,
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 2,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 400,
+          "seconds": 91.95941609999863,
+          "fps": 4.349744887081835,
+          "collection_seconds": 16.110059489001287,
+          "learning_seconds": 77.48853948599572,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 400,
+          "seconds": 75.86446589899424,
+          "fps": 5.272560681209553,
+          "collection_seconds": 20.65288254799816,
+          "learning_seconds": 55.26851709499897,
+          "updates": 40
+        }
+      ],
+      "steady_samples_per_second": 5.272560681209553,
+      "active_gpu_engine_mean_percent": 35.960585259144935,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1152610304,
+      "peak_sensor_temperature_c": 73.9,
+      "checkpoint": {
+        "iteration": 2,
+        "updates": 40,
+        "sigma": [
+          0.9986761212348938,
+          1.0035392045974731,
+          1.0049738883972168,
+          0.9984836578369141
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b16_check",
+      "state": "completed",
+      "source_commit": "9383f6ac7a78e54b4ffc5b789bea649a98c21ea5",
+      "arguments": {
+        "envs": 16,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": 100,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b16_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": null,
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": null,
+        "rollout_jit": null,
+        "main_cpu": null,
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 1600,
+          "seconds": 37.22511148999911,
+          "fps": 42.98173829324475,
+          "collection_seconds": 16.57618873300089,
+          "learning_seconds": 21.859979009997915,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 1600,
+          "seconds": 28.710203638001985,
+          "fps": 55.729315618025616,
+          "collection_seconds": 15.923783995000122,
+          "learning_seconds": 12.824045909997949,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 1600,
+          "seconds": 25.86102919300174,
+          "fps": 61.86915408737779,
+          "collection_seconds": 13.6257521669977,
+          "learning_seconds": 12.272124563001853,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 58.638953785591845,
+      "active_gpu_engine_mean_percent": 1.9739567155504263,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1111191552,
+      "peak_sensor_temperature_c": 69.2,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.016941785812378,
+          0.9804778695106506,
+          1.004310965538025,
+          0.9876018762588501
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b32_check",
+      "state": "completed",
+      "source_commit": "e820381fb15400af71bd6dca2fac39e420d0e539",
+      "arguments": {
+        "envs": 32,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": 100,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b32_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 100,
+        "jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": null,
+        "rollout_jit": null,
+        "main_cpu": null,
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 3200,
+          "seconds": 48.242234192999604,
+          "fps": 66.33191960384683,
+          "collection_seconds": 19.10784339199745,
+          "learning_seconds": 30.361998530002893,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 3200,
+          "seconds": 34.93209508000291,
+          "fps": 91.60630052881825,
+          "collection_seconds": 17.593252548002056,
+          "learning_seconds": 17.372893308995117,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 3200,
+          "seconds": 31.799720973998774,
+          "fps": 100.62981378410517,
+          "collection_seconds": 15.19896689899906,
+          "learning_seconds": 16.636409799997637,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 95.90627647269332,
+      "active_gpu_engine_mean_percent": 2.2250819172316465,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1156681728,
+      "peak_sensor_temperature_c": 75.9,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.0038206577301025,
+          1.0209681987762451,
+          0.9896225333213806,
+          1.027545690536499
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b64_v2_check",
+      "state": "completed",
+      "source_commit": "f6173d80ac0dc24a6c071d369b22c888f2a5c23b",
+      "arguments": {
+        "envs": 64,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": 100,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b64_v2_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 100,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": null,
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 6400,
+          "seconds": 48.56816777399945,
+          "fps": 131.7735523765462,
+          "collection_seconds": 12.631663491003565,
+          "learning_seconds": 37.15743145599845,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 6400,
+          "seconds": 33.85100261099433,
+          "fps": 189.06382400388253,
+          "collection_seconds": 10.640443845994014,
+          "learning_seconds": 23.245245400001295,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 6400,
+          "seconds": 31.949656919001427,
+          "fps": 200.31514004126055,
+          "collection_seconds": 10.152661681997415,
+          "learning_seconds": 21.832995557000686,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 194.5269255875014,
+      "active_gpu_engine_mean_percent": 3.7508577847117626,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1179054080,
+      "peak_sensor_temperature_c": 73.1,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.0046112537384033,
+          1.006844162940979,
+          1.0045504570007324,
+          1.0113290548324585
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b128_check",
+      "state": "completed",
+      "source_commit": "35f2051da90ac15de8cbeb55abc285606f4459f4",
+      "arguments": {
+        "envs": 128,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": 128,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b128_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 128,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 12800,
+          "seconds": 55.06786721300159,
+          "fps": 232.44045298667214,
+          "collection_seconds": 12.65039118900313,
+          "learning_seconds": 46.90692535499693,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 12800,
+          "seconds": 41.48230455999874,
+          "fps": 308.565305996596,
+          "collection_seconds": 11.315446824999526,
+          "learning_seconds": 30.210891869995976,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 12800,
+          "seconds": 40.88095774600515,
+          "fps": 313.1042105110858,
+          "collection_seconds": 10.351017909000802,
+          "learning_seconds": 30.574736618000316,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 310.81818863473893,
+      "active_gpu_engine_mean_percent": 5.039162964840792,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1385631744,
+      "peak_sensor_temperature_c": 69.2,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          0.9904429912567139,
+          0.9946213364601135,
+          1.0065233707427979,
+          1.033315658569336
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b256_check",
+      "state": "completed",
+      "source_commit": "35f2051da90ac15de8cbeb55abc285606f4459f4",
+      "arguments": {
+        "envs": 256,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": null,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_microbatch_b256_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 128,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 25600,
+          "seconds": 86.83048639100161,
+          "fps": 294.8273246417398,
+          "collection_seconds": 16.388751352002146,
+          "learning_seconds": 74.20255204400019,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 25600,
+          "seconds": 67.82455799799936,
+          "fps": 377.4444059149656,
+          "collection_seconds": 14.838822698999138,
+          "learning_seconds": 53.028179627995996,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 25600,
+          "seconds": 68.7813622590038,
+          "fps": 372.1938496012972,
+          "collection_seconds": 14.049343519000104,
+          "learning_seconds": 54.774374442997214,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 374.80073999483346,
+      "active_gpu_engine_mean_percent": 4.040525289393854,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1384189952,
+      "peak_sensor_temperature_c": 69.6,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.0237560272216797,
+          0.9948890805244446,
+          1.012845516204834,
+          0.9867241382598877
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_largechunk_b512_check",
+      "state": "failed_kernel_lockup",
+      "source_commit": "175107991413e7d19cc8871d62f1b4d254165c0f",
+      "arguments": {
+        "envs": 512,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": 4096,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_largechunk_b512_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 4096,
+        "inference_chunk_size": 1024,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": false,
+      "iterations_completed": 2,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 51200,
+          "seconds": 124.33660638999572,
+          "fps": 411.78540645870174,
+          "collection_seconds": 12.259264934000385,
+          "learning_seconds": 115.60846357500122,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 51200,
+          "seconds": 108.80106527099997,
+          "fps": 470.5836277657011,
+          "collection_seconds": 11.510423362997244,
+          "learning_seconds": 97.33912041599979,
+          "updates": 40
+        }
+      ],
+      "steady_samples_per_second": 470.5836277657011,
+      "active_gpu_engine_mean_percent": 58.584598229052745,
+      "raw_gpu_windows_over_100": 7,
+      "peak_rss_bytes": 1390452736,
+      "peak_sensor_temperature_c": 75.9
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_native_b512_check",
+      "state": "completed",
+      "source_commit": "0197a9484217f55df194943a8402785935dbb0a1",
+      "arguments": {
+        "envs": 512,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": 4096,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_native_b512_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 4096,
+        "inference_chunk_size": 1024,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 51200,
+          "seconds": 33.444205006999255,
+          "fps": 1530.9079701336834,
+          "collection_seconds": 11.615923274002853,
+          "learning_seconds": 23.545270901995536,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 51200,
+          "seconds": 21.989795911002147,
+          "fps": 2328.3526689933087,
+          "collection_seconds": 9.807463222998194,
+          "learning_seconds": 12.222133745002793,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 51200,
+          "seconds": 21.34768631800398,
+          "fps": 2398.3863748653407,
+          "collection_seconds": 9.341599300998496,
+          "learning_seconds": 12.055389587003447,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 2362.8506948994573,
+      "active_gpu_engine_mean_percent": 18.81111032274462,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1146564608,
+      "peak_sensor_temperature_c": 77.4,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          0.980945348739624,
+          0.9889844059944153,
+          0.9815942645072937,
+          0.9977594017982483
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_native_b1024_check",
+      "state": "completed",
+      "source_commit": "c890273b8e2cb6eef116e9e7b45fe4c2de3b3187",
+      "arguments": {
+        "envs": 1024,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": null,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_native_b1024_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 4096,
+        "inference_chunk_size": 1024,
+        "row_lookup": "native_opencl_index_load",
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 102400,
+          "seconds": 45.169940543004486,
+          "fps": 2266.994349981689,
+          "collection_seconds": 13.817982074004249,
+          "learning_seconds": 35.18597936000151,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 102400,
+          "seconds": 30.654985827997734,
+          "fps": 3340.4027838915617,
+          "collection_seconds": 11.556636995999725,
+          "learning_seconds": 19.158154309996462,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 102400,
+          "seconds": 30.121583234002173,
+          "fps": 3399.5557007909106,
+          "collection_seconds": 11.338075660001778,
+          "learning_seconds": 18.836034362000646,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 3369.719665996244,
+      "active_gpu_engine_mean_percent": 25.810786980624332,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1401188352,
+      "peak_sensor_temperature_c": 64.5,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.0132585763931274,
+          1.0019025802612305,
+          0.9995515942573547,
+          1.0000039339065552
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_native_b2048_check",
+      "state": "completed",
+      "source_commit": "c890273b8e2cb6eef116e9e7b45fe4c2de3b3187",
+      "arguments": {
+        "envs": 2048,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": null,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_native_b2048_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 4096,
+        "inference_chunk_size": 1024,
+        "row_lookup": "native_opencl_index_load",
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 204800,
+          "seconds": 67.33207114800462,
+          "fps": 3041.6411749732615,
+          "collection_seconds": 20.08421352000005,
+          "learning_seconds": 50.96576002400252,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 204800,
+          "seconds": 54.46087398599775,
+          "fps": 3760.4978585664167,
+          "collection_seconds": 18.662572886001726,
+          "learning_seconds": 35.88091950099624,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 204800,
+          "seconds": 54.07903265200002,
+          "fps": 3787.049988817169,
+          "collection_seconds": 18.554385039002227,
+          "learning_seconds": 35.599428438996256,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 3773.7272187463514,
+      "active_gpu_engine_mean_percent": 32.63782943121811,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1402277888,
+      "peak_sensor_temperature_c": 70.4,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.000173807144165,
+          1.0000003576278687,
+          0.9781880378723145,
+          1.0017539262771606
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_native_b2048_t1_check",
+      "state": "completed",
+      "source_commit": "c890273b8e2cb6eef116e9e7b45fe4c2de3b3187",
+      "arguments": {
+        "envs": 2048,
+        "steps": 100,
+        "iterations": 3,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": null,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_native_b2048_t1_check",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 4096,
+        "inference_chunk_size": 1024,
+        "row_lookup": "native_opencl_index_load",
+        "cpu_staging_threads": 1,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": "1"
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 3,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 204800,
+          "seconds": 67.10071545600658,
+          "fps": 3052.1284103784787,
+          "collection_seconds": 19.119310525005858,
+          "learning_seconds": 49.64594567499444,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 204800,
+          "seconds": 55.32859864499915,
+          "fps": 3701.5215461002963,
+          "collection_seconds": 18.122263122997538,
+          "learning_seconds": 37.27243980500498,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 204800,
+          "seconds": 55.06344935600646,
+          "fps": 3719.3456348128307,
+          "collection_seconds": 17.56750406700303,
+          "learning_seconds": 37.56983127800049,
+          "updates": 60
+        }
+      ],
+      "steady_samples_per_second": 3710.4121847279143,
+      "active_gpu_engine_mean_percent": 34.56908952821128,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1110290432,
+      "peak_sensor_temperature_c": 64.1,
+      "checkpoint": {
+        "iteration": 3,
+        "updates": 60,
+        "sigma": [
+          1.000173807144165,
+          1.0000003576278687,
+          0.9781880378723145,
+          1.0017539262771606
+        ],
+        "all_model_tensors_finite": true
+      }
+    },
+    {
+      "output": "/home/radxa/Documents/rl_radxa/records/run_native_default_stability",
+      "state": "completed",
+      "source_commit": "16e2e56519f4bafcddec8c948a3b066a4e276721",
+      "arguments": {
+        "envs": 2048,
+        "steps": 100,
+        "iterations": 10,
+        "epochs": null,
+        "minibatches": null,
+        "microbatch_size": null,
+        "output": "/home/radxa/Documents/rl_radxa/records/run_native_default_stability",
+        "resume": null,
+        "physics": "genesis",
+        "timeout_bootstrap": "rsl",
+        "exp_name": "s1_waypoint_passing_rigid",
+        "vis": false
+      },
+      "execution": {
+        "microbatch_size": 4096,
+        "inference_chunk_size": 1024,
+        "row_lookup": "native_opencl_index_load",
+        "cpu_staging_threads": 8,
+        "jit": true,
+        "jit_adam": true,
+        "rollout_jit": true,
+        "batch_realize": true,
+        "hardware": {
+          "name": "FD643",
+          "vendor_id": "0x5143",
+          "driver": "25.2.8-0ubuntu0.24.04.4",
+          "backend": "CL"
+        },
+        "host_dispatch": {
+          "mode": "auto",
+          "main_cpu": 7,
+          "capacity_and_max_frequency": [
+            1024,
+            2707200
+          ],
+          "original_allowed_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "scope": "calling training thread; already initialized workers retain affinity"
+        }
+      },
+      "runtime_flags": {
+        "ppo_batch_realize": "1",
+        "ppo_jit": "1",
+        "ppo_jit_adam": "1",
+        "rollout_jit": "1",
+        "main_cpu": "auto",
+        "torch_threads": null
+      },
+      "eligible_for_selection": true,
+      "iterations_completed": 10,
+      "iteration_timings": [
+        {
+          "iteration": 1,
+          "samples": 204800,
+          "seconds": 65.89908398999978,
+          "fps": 3107.7821966550932,
+          "collection_seconds": 19.371160929003963,
+          "learning_seconds": 48.20693881799525,
+          "updates": 20
+        },
+        {
+          "iteration": 2,
+          "samples": 204800,
+          "seconds": 55.53675304799981,
+          "fps": 3687.648066551417,
+          "collection_seconds": 18.489242178002314,
+          "learning_seconds": 37.13291920100164,
+          "updates": 40
+        },
+        {
+          "iteration": 3,
+          "samples": 204800,
+          "seconds": 54.40978414500569,
+          "fps": 3764.028900651295,
+          "collection_seconds": 18.09008708500187,
+          "learning_seconds": 36.4030764679992,
+          "updates": 60
+        },
+        {
+          "iteration": 4,
+          "samples": 204800,
+          "seconds": 54.104020806000335,
+          "fps": 3785.3009249413662,
+          "collection_seconds": 18.061945299996296,
+          "learning_seconds": 36.128956384003686,
+          "updates": 80
+        },
+        {
+          "iteration": 5,
+          "samples": 204800,
+          "seconds": 54.33248994399764,
+          "fps": 3769.383663643878,
+          "collection_seconds": 18.293744978000177,
+          "learning_seconds": 36.12638440699811,
+          "updates": 100
+        },
+        {
+          "iteration": 6,
+          "samples": 204800,
+          "seconds": 54.66329960999428,
+          "fps": 3746.5722241647427,
+          "collection_seconds": 17.806715710998105,
+          "learning_seconds": 36.92321604800236,
+          "updates": 120
+        },
+        {
+          "iteration": 7,
+          "samples": 204800,
+          "seconds": 54.905312222996145,
+          "fps": 3730.058016393959,
+          "collection_seconds": 18.16403701499803,
+          "learning_seconds": 36.80821692899917,
+          "updates": 140
+        },
+        {
+          "iteration": 8,
+          "samples": 204800,
+          "seconds": 54.39057712100475,
+          "fps": 3765.358097678827,
+          "collection_seconds": 18.64715489000082,
+          "learning_seconds": 35.82829694999964,
+          "updates": 160
+        },
+        {
+          "iteration": 9,
+          "samples": 204800,
+          "seconds": 54.828205844001786,
+          "fps": 3735.303697201048,
+          "collection_seconds": 18.406009646998427,
+          "learning_seconds": 36.50959180200152,
+          "updates": 180
+        },
+        {
+          "iteration": 10,
+          "samples": 204800,
+          "seconds": 56.112737258998095,
+          "fps": 3649.7952159188026,
+          "collection_seconds": 18.198172812997655,
+          "learning_seconds": 37.98864050600241,
+          "updates": 200
+        }
+      ],
+      "steady_samples_per_second": 3736.5960866535233,
+      "active_gpu_engine_mean_percent": 37.23553384512279,
+      "raw_gpu_windows_over_100": 0,
+      "peak_rss_bytes": 1088970752,
+      "peak_sensor_temperature_c": 74.3,
+      "checkpoint": {
+        "iteration": 10,
+        "updates": 200,
+        "sigma": [
+          1.0267162322998047,
+          0.8902499079704285,
+          0.877910315990448,
+          1.0024166107177734
+        ],
+        "all_model_tensors_finite": true
+      }
+    }
+  ]
+}

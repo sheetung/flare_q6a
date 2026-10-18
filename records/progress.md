@@ -319,3 +319,7 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 2026-10-17 Native实测：B512三轮全部PASS，后两轮2362.851 samples/s；B1024三轮PASS，后两轮约3370 samples/s；B2048（原版并行数）三轮PASS，后两轮约3773 samples/s，所有20更新/轮、100步/4逻辑批次与原版一致，内存余量充足。B2048 CPU-staging线程1对照也完成三轮，未见明确端到端提升，因此保留默认PyTorch线程设置；可选RL_TORCH_THREADS写入execution和manifest作移植调优，不改神经网络GPU训练。
 
 根据实测将刚性默认并行设置为2048，解除早期B4临时限制；原柔性参考任务仍默认4（未做63自由度模型大规模测试），显式-B始终覆盖默认。scripts/run.sh默认启用梯度/Adam/rollout JIT与合并提交、主线程自动选择最高容量允许核；支持环境变量关闭作诊断，始终原生GPU行索引。README更新完整原配置对应关系、启动/续训/微块/执行开关/代码快照和移植检查。将用普通默认入口做10轮连续验证，之后补充最终结果与内核审计；这不是收敛或实飞验证。
+
+2026-10-18 收尾（实验运行于10月17日）：默认2048入口10轮连续PASS，2048000样本/200次Adam更新，排除编译首轮3736.596 samples/s；峰值RSS1.014GiB、最低系统available4.516GiB、最高传感器74.3°C。B16实际续训10→11轮/200→220更新PASS，权重更新、模型/Adam有限且sigma为正，源checkpoint SHA保持不变。原PPO数值/随机数续训对照、404样本含64+37余块且8次实际全局裁剪、1025环境跨推理块/历史输出独立/bootstrap、日志统计回归均PASS。冻结GPU策略加载评估2个0.03秒测试回合PASS、权重不变，仅链路检查，非跟踪/收敛证据。README补充实测与限制，active_training更新默认配置；未启动长期训练。
+
+内核审计完成：2026-10-17 16:00:00至2026-10-18 03:17:07，journalctl -k筛选hangcheck detected gpu lockup/gpu fault/offending task无匹配（exit1正常无结果），见native_gpu_kernel_audit.log。当前rl-*运行中服务0；不代表其他类型错误已全部排除。
