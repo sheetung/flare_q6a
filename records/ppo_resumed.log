@@ -1,7 +1,0 @@
-[GsTaichi] version 4.6.0, llvm 20.1.0, commit 72f02b06, linux, python 3.12.3
-phase: Genesis Vulkan init
-[38;5;226m[Genesis] [03:57:18] [WARNING] No Intel XPU device available. Falling back to CPU for torch device.[0m
-phase: original FLARE scene build
-phase: original FLARE reset
-{"iteration": 2, "samples": 8, "seconds": 9.375730139000098, "resets": 0, "device": "CL", "loss": -0.044297775719314814, "policy_loss": -0.03697077929973602, "value_loss": 0.004021653905510902, "entropy": 5.6743247509002686, "kl": 0.0021526962518692017, "learning_rate": 0.00151875, "updates": 4, "discarded_samples": 0}
-{"status": "PASS", "scope": "genesis PPO training smoke; convergence unverified", "max_weight_change": 0.002530723810195923, "setup_seconds": 26.143877634999626, "training_seconds": 9.54040003199998, "arguments": {"envs": 2, "steps": 4, "iterations": 1, "epochs": 1, "minibatches": 2, "output": "records/ppo_resumed", "resume": "records/ppo_aligned/checkpoint.npz", "physics": "genesis", "timeout_bootstrap": "rsl"}, "config": {"clip_param": 0.2, "desired_kl": 0.01, "entropy_coef": 0.002, "gamma": 0.99, "lam": 0.95, "learning_rate": 0.0003, "max_grad_norm": 1.0, "num_learning_epochs": 1, "num_mini_batches": 2, "schedule": "adaptive", "use_clipped_value_loss": true, "value_loss_coef": 1.0, "timeout_bootstrap": "rsl"}, "iteration": 2, "updates": 4}

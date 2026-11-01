@@ -1,1 +1,0 @@
-{"status": "PASS", "scope": "checkpoint reload and surrogate GPU evaluation", "steps": 32, "envs": 8, "device": "CL", "resets": 0, "mean_reward": -0.0001582312397658825}

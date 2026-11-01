@@ -1,1 +1,0 @@
-{"status": "PASS", "device": "CL", "envs": 64, "steps": 12, "max_absolute_error": 0.0, "checks": ["fresh observations and Gaussian noise", "explicit updated weights", "trajectory buffers preserved across replay"]}

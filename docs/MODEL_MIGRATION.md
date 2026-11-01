@@ -45,7 +45,7 @@ scripts/migrate_flare_policy.sh records/run_official_flare_example/model_800.pt 
 
 输入 `observation` 为 FP32 `[1,26]`：当前和下一航点误差、机体速度、姿态矩阵、前一动作、绳角及角速度，缩放和顺序见 `flare_q6a/envs/scenario1_env.py`。输出 `action_mean` 为 FP32 `[1,4]`，是油门和三轴角速度目标；ONNX 不含动作裁剪，调用方须按原环境裁剪至 `[-1,1]` 并执行后续映射、PID 和混控。本工程目前没有 PX4 接口，也没有完成机体系、坐标系、控制频率和飞行安全验证。
 
-本机原示例模型转换：Actor 与 PyTorch 最大绝对误差约 `9.54e-7`，Critic 约 `4.77e-7`，ONNX Actor 与 PyTorch 约 `1.49e-7`。种子 123、4 环境、均值策略评估中，4 回合 3 次失败，1 次达到 15.01 秒上限；共触达 63 个航点。这是一次小样本运行，不能证明稳定或实飞可用，评估 `PASS` 仅表示执行完成。记录见 `records/pretrained_flare_evaluation.log`。
+本机原示例模型转换：Actor 与 PyTorch 最大绝对误差约 `9.54e-7`，Critic 约 `4.77e-7`，ONNX Actor 与 PyTorch 约 `1.49e-7`。种子 123、4 环境、均值策略评估中，4 回合 3 次失败，1 次达到 15.01 秒上限；共触达 63 个航点。这是一次小样本运行，不能证明稳定或实飞可用，评估 `PASS` 仅表示执行完成。记录保存在本机 `records/pretrained_flare_evaluation.log`，不随仓库发布。
 
 ## QAIRT 量化与 NPU
 

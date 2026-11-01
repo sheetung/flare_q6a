@@ -1,8 +1,0 @@
-Training output: /home/radxa/Documents/rl_radxa/records/run_s1_waypoint_passing_rigid_20261017_144307_918658
-usage: train.py [-h] [-B ENVS] [--steps STEPS] [--max_iterations ITERATIONS]
-                [--epochs EPOCHS] [--minibatches MINIBATCHES]
-                [--output OUTPUT] [--resume RESUME]
-                [--physics {surrogate,genesis}]
-                [--timeout-bootstrap {rsl,terminal}]
-                [-e {s1_waypoint_passing,s1_waypoint_passing_rigid}] [-v]
-train.py: error: minibatch size 400 is blocked on this Q6A OpenCL adaptation: GPU lockups confirmed at 200, 256 and 400 samples. Use -B 4 with the original 100 steps / 4 minibatches; smaller sizes still require validation.

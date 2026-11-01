@@ -39,4 +39,4 @@ scripts/run.sh scripts/eval_server_s2.py --checkpoint records/run_s2_transfer/po
 
 ## 本次 800 轮结果
 
-训练与迁移详情见 `records/server_s2_800_training_summary_20261101.json`，板端评估见 `records/server_s2_800_evaluation_20261101.json`。本机模型、配置与完整日志保存在被 Git 忽略的 `records/run_server_s2_final_20261101/`；其中 `policy.npz` 为 Adreno 推理文件。4 个评估回合均达到 15.01 秒、共经过 76 个航点，但平均世界竖直摆角约 48.26°、峰值约 110.87°。该摆角和样本数说明仍需分析抑摆与泛化，尚不能用于实飞。
+本机的训练与迁移详情保存在 `records/server_s2_800_training_summary_20261101.json`，板端评估保存在 `records/server_s2_800_evaluation_20261101.json`；这些本地记录不随 Git 仓库发布。本机模型、配置与完整日志保存在被 Git 忽略的 `records/run_server_s2_final_20261101/`；其中 `policy.npz` 为 Adreno 推理文件。4 个评估回合均达到 15.01 秒、共经过 76 个航点，但平均世界竖直摆角约 48.26°、峰值约 110.87°。该摆角和样本数说明仍需分析抑摆与泛化，尚不能用于实飞。

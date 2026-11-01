@@ -1,8 +1,0 @@
-[GsTaichi] version 4.6.0, llvm 20.1.0, commit 72f02b06, linux, python 3.12.3
-phase: Genesis Vulkan init
-[38;5;226m[Genesis] [03:43:34] [WARNING] No Intel XPU device available. Falling back to CPU for torch device.[0m
-phase: original FLARE scene build
-phase: original FLARE reset
-{"iteration": 1, "samples": 8, "seconds": 13.978106855000078, "loss": -0.08358314633369446, "mean_bootstrapped_reward": -8.160242578014731e-05, "resets": 0, "device": "CL"}
-{"iteration": 2, "samples": 8, "seconds": 2.3402197099999285, "loss": -0.0772254690527916, "mean_bootstrapped_reward": -0.00043587773689068854, "resets": 0, "device": "CL"}
-{"status": "PASS", "scope": "genesis environment + OpenCL PPO smoke only", "max_weight_change": 0.0012032687664031982, "seconds": 17.372819138000068, "arguments": {"envs": 2, "steps": 4, "iterations": 2, "epochs": 2, "output": "records/ppo_genesis", "physics": "genesis"}, "config": {"clip_param": 0.2, "desired_kl": 0.01, "entropy_coef": 0.002, "gamma": 0.99, "lam": 0.95, "learning_rate": 0.0003, "max_grad_norm": 1.0, "num_learning_epochs": 5, "num_mini_batches": 4, "schedule": "adaptive", "use_clipped_value_loss": true, "value_loss_coef": 1.0}}

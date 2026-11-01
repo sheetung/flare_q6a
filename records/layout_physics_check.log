@@ -1,6 +1,0 @@
-[GsTaichi] version 4.6.0, llvm 20.1.0, commit 72f02b06, linux, python 3.12.3
-phase: Genesis Vulkan init
-[38;5;226m[Genesis] [03:27:17] [WARNING] No Intel XPU device available. Falling back to CPU for torch device.[0m
-phase: original FLARE scene build (viewer=False)
-phase: original FLARE reset
-{"status": "PASS", "total_mass_kg": 0.3742, "changed_methods": ["__init__", "reset_idx"], "checks": ["all step/reward/target/observation/safety methods AST-identical to FLARE", "only model construction and articulated reset differ", "only num_of_dofs differs in environment configuration", "original PPO/100-step rollout, rigid parallel 2048 -> logical minibatch 51200", "total physical mass matches original model", "one rigid rod, root free rotation and fixed payload", "actual Vulkan 26-D observation/reward decomposition/rigid length", "non-contiguous reset clears selected state and preserves others", "original target transition and timeout"]}

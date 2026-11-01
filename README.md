@@ -45,7 +45,7 @@ flare_q6a/
 ├── runners/    # 策略网络与训练器
 └── utils/      # 混控、配置和验证工具
 scripts/        # 启动、迁移和评估工具
-records/        # 训练与评估记录
+records/        # 本机训练与评估输出（不纳入 Git）
 ```
 
 ## 文档

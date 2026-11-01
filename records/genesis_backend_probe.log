@@ -1,4 +1,0 @@
-[GsTaichi] version 4.6.0, llvm 20.1.0, commit 72f02b06, linux, python 3.12.3
-{"gstaichi_version": "(4, 6, 0)", "has_vulkan": true}
-[GsTaichi] Starting on arch=vulkan
-{"status": "PASS", "backend": "Vulkan"}

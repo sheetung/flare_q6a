@@ -1,4 +1,0 @@
-2026-10-17 06:02:24 UTC, sudo journalctl -k output excerpt:
-msm_dpu ae01000.display-controller: [drm:hangcheck_handler] *ERROR* 6.3.5.0: hangcheck detected gpu lockup rb 0!
-msm_dpu ae01000.display-controller: [drm:recover_worker] *ERROR* 6.3.5.0: hangcheck recover!
-msm_dpu ae01000.display-controller: [drm:recover_worker] *ERROR* 6.3.5.0: offending task: rusticl queue t (.venv-gpu/bin/python -u flare_q6a/train.py --physics genesis --envs 32 --steps 32 --iterations 3 --output /home/radxa/Documents/rl_radxa/records/run_gpu_bench_32x32_batch --exp_name s1_waypoint_passing)
