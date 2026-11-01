@@ -48,3 +48,12 @@
 - 按用户提供的 SSH 地址配置 origin，使用现有 SSH 密钥完成 GitHub 身份验证，main 已设置跟踪 origin/main。
 - 当前网络直连 GitHub 22 端口超时；此工作区的本地 Git 配置使用现有代理连接 GitHub SSH 443，主机公钥来自 GitHub 官方元数据并严格校验。代理设置仅保存在本机 .git 中，不随仓库发布。
 - 验证：首次推送后，通过 SSH 读取远端 main，确认与本地提交一致；更新 README 使用 SSH 克隆地址。
+
+## 2026-11-01：更新仓库地址与策略迁移流程
+
+- 将本地 origin 更新为 `git@github.com:sheetung/flare_q6a.git`，SSH 读取远程 main 成功；精简 README，主流程改为 NVIDIA 训练、板端迁移和 GPU 仿真评估，板端训练保留作调试。
+- 增加原版 `.pt` 与可信 `config.yaml` / `cfgs.pkl` 配置导入、OpenCL 检查点及确定性 Actor ONNX 导出工具；不包含优化器，不能用于续训；新增仿真观测采样与 QAIRT 转换/量化调用脚本。
+- 原版第 800 轮公开模型在 Adreno 643 上转换核对，Actor 最大绝对误差 9.54e-7、Critic 4.77e-7；ONNX 与 PyTorch 最大绝对误差 1.49e-7。原版模型下载的 SHA256 核对成功；拒绝覆盖已有输出的检查通过。
+- GPU 仿真种子 123、4 环境 4 回合：3 失败、1 回合 15.01 秒超时，共 63 航点；仅证明执行完成，不代表稳定。日志记录在 records/pretrained_flare_evaluation.log。
+- QAIRT 系统软件包隔离检查发现转换器缺少 `qti.aisw` 模块；完整 SDK 转换、量化、NPU 运行及 PX4 控制尚未验证。流程、接口和限制见 docs/MODEL_MIGRATION.md。
+- 新入口迁移和原始仿真观测采集实机通过（2 环境、3 步，6 条观测仅用于流程测试）；QAIRT 参数串联使用模拟命令验证，不代表真实量化通过。原始观测列表跨主机复制后需重新生成绝对路径。

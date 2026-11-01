@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "onnx": "/home/radxa/Documents/rl_radxa/records/run_pretrained_flare_import/actor.onnx",
+  "onnx_sha256": "f628e68b8d6d3ace181c7aa4f1e5c8a74f1a0cd3aa582fbd9a0a8216ac3228b7",
+  "source_checkpoint_sha256": "f67bb7be32090ccab034336da7517300a35a9165490c0ecf9d1bc86015bbfd56",
+  "opset": 13,
+  "input": {
+    "name": "observation",
+    "shape": [
+      1,
+      26
+    ],
+    "dtype": "float32"
+  },
+  "output": {
+    "name": "action_mean",
+    "shape": [
+      1,
+      4
+    ],
+    "dtype": "float32"
+  },
+  "max_absolute_error": 1.4901161193847656e-07,
+  "scope": "deterministic actor only; ONNX validation on CPU; NPU not yet converted or tested",
+  "action_clipping_in_graph": false
+}
