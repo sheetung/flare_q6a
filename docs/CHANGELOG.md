@@ -90,3 +90,8 @@
 
 - 用户授权更改服务器时间后，检查发现原 Ubuntu NTP 地址无响应；实测服务器可访问 `ntp.aliyun.com`，新增 `/etc/systemd/timesyncd.conf.d/60-flare-ntp.conf` 指定该时间源并保留 Ubuntu 作为备选。
 - 重启服务器 `systemd-timesyncd` 后确认上海时区、NTP 服务运行、`System clock synchronized: yes`；本机当前 NTP 尚未同步，因此两机长期偏差仍取决于本机时钟。
+
+## 2026-11-01：按已验证流程更新 README
+
+- 在 README 开头增加从 NVIDIA 训练、模型传输、Adreno 转换到 Vulkan 仿真评估的流程图，明确 PX4 接口为后续工作。
+- 主流程改为本次已完成的 S2 刚性场景，列出训练、传输、导入和评估步骤及实际结果；保留 S1 文档入口、本机调试训练命令和场景区分。

@@ -1,50 +1,75 @@
 # FLARE on Qualcomm
 
-在 NVIDIA GPU 上训练 FLARE 无人机吊挂策略，再迁移到 Radxa Dragon Q6A 等高通平台验证和部署。场景使用 `s*` 命名，并分别保存环境、模型和训练配置。
+在 NVIDIA GPU 上训练无人机吊挂策略，迁移到 Radxa Dragon Q6A 的 Adreno GPU 推理，并通过板端仿真评估。场景使用 `s*` 命名，各自配置环境、模型和训练参数。
 
-板端使用 Adreno GPU 进行策略推理，使用 Vulkan 进行仿真；已完成模型转换和仿真运行验证。工程尚未接入 PX4 实飞控制。
-
-当前场景：
-
-| 场景 | 模型与配置 |
-| --- | --- |
-| `s1_waypoint_passing` | 原 FLARE 柔性绳 |
-| `s2_waypoint_passing_rigid` | 服务器对应的双关节刚性绳航点任务 |
-
-其他服务器场景需逐项迁移和验证；旧的 `s1_waypoint_passing_rigid` 名称保留兼容，它与 `s2` 不是同一个模型。
-
-## 1. NVIDIA 上训练
-
-按照 [原 FLARE 安装说明](https://github.com/BEI11HAI/Flare/tree/41f03b94f2f724205e5e24617010467aae2a3f98#installation) 配置 NVIDIA 训练环境，然后运行：
-
-```bash
-python waypoint_passing_train.py -e s1_waypoint_passing -B 2048 --max_iterations 800
+```mermaid
+flowchart LR
+    A[选择场景与模型] --> B[NVIDIA GPU<br/>Genesis 仿真与 PPO 训练]
+    B --> C[训练检查点<br/>model_800.pt + cfgs.pkl]
+    C --> D[复制到 Q6A<br/>校验文件]
+    D --> E[转换策略<br/>PyTorch 与 Adreno 数值对照]
+    E --> F[policy.npz<br/>Adreno OpenCL 推理]
+    F --> G[Genesis Vulkan 仿真<br/>回合、航点与摆角评估]
+    G --> H[分析结果并优化策略]
+    H -. 后续工作 .-> I[PX4 接口与实飞验证]
 ```
 
-训练完成后，将同一日志目录中的 `model_800.pt` 和 `cfgs.pkl` 一起复制到 Q6A。也可以使用原项目提供的示例模型；来源和校验方法见[迁移文档](docs/MODEL_MIGRATION.md)。只使用可信来源的模型和配置文件。
+板端仿真使用 Vulkan，策略网络使用 OpenCL；观测、混控及数据传递包含 CPU 工作。工程尚未接入 PX4 实飞控制。
 
-## 2. Q6A 上迁移并评估
+| 场景 | 任务 |
+| --- | --- |
+| `s1_waypoint_passing` | 原 FLARE 柔性绳航点跟踪 |
+| `s2_waypoint_passing_rigid` | 服务器 S2 双关节刚性绳航点跟踪 |
+
+其他服务器场景需逐项迁移验证。旧的 `s1_waypoint_passing_rigid` 保留兼容，它与 S2 使用不同模型。
+
+## S2 完整流程
+
+### 1. NVIDIA 训练
+
+在包含 S2 场景的 FLARE 服务器工程中运行：
+
+```bash
+cd /home/sheetung/flare_ws/Flare
+../.venv/bin/python -u train.py -e s2_waypoint_passing_rigid \
+  -B 2048 --max_iterations 800 --device cuda:0
+```
+
+训练日志目录中会生成 `model_800.pt` 和 `cfgs.pkl`。S2 是服务器工程的场景，不能使用原版 FLARE 的 S1 训练入口代替；服务器代码版本和配置见 [S2 迁移记录](docs/SERVER_S2.md)。
+
+### 2. 复制到 Q6A
+
+将同一个训练日志目录中的 `model_800.pt` 和 `cfgs.pkl` 一起复制到 Q6A，保存到新目录，例如 `records/run_s2_input/`。本次使用 SSH 传输，并在服务器与本机分别计算 SHA256，确认文件一致。只加载可信来源的模型和配置文件。
+
+### 3. 导入并评估
+
+首次在 Q6A 部署时，按[板卡准备说明](docs/MODEL_MIGRATION.md)安装驱动与依赖，然后获取并安装工程：
 
 ```bash
 git clone --recurse-submodules git@github.com:sheetung/flare_q6a.git
 cd flare_q6a
-# 根据板卡安装 OpenCL/Vulkan 驱动及 Python 3.12 等依赖，详见迁移文档
 scripts/setup.sh
-
-# 替换成自己的模型路径；输出目录必须是新目录
-scripts/run.sh scripts/import_flare_policy.py \
-  --checkpoint /path/to/model_800.pt --output records/run_my_policy/policy.npz
-scripts/run.sh flare_q6a/waypoint_passing_eval.py \
-  --checkpoint records/run_my_policy/policy.npz \
-  -e s1_waypoint_passing --envs 4 --episodes 4 --mode mean
 ```
 
-迁移生成 GPU 用的 `policy.npz`，无需量化。评估结果自动保存在 `records/`。板端训练可用于调试，但由于资源限制不推荐作为主要训练方式。
+```bash
+scripts/run.sh scripts/import_server_s2.py \
+  --checkpoint records/run_s2_input/model_800.pt \
+  --config records/run_s2_input/cfgs.pkl \
+  --output records/run_s2_transfer/policy.npz
 
-本机按相同场景名启动 S2 训练（默认 4 个并行环境）：
+scripts/run.sh scripts/eval_server_s2.py \
+  --checkpoint records/run_s2_transfer/policy.npz \
+  --output records/run_s2_evaluation --envs 4 --episodes 4 --steps 1501
+```
+
+导入器核对场景配置和网络结构，并比较原 PyTorch 与 Adreno 的 Actor 输出；生成的 `policy.npz` 用于 GPU 推理，无需量化。评估输出目录必须是新目录，结果保存在 `evaluation.json` 和 `episodes.jsonl`。
+
+本次在 RTX 5060 Ti 上完成 800 轮、约 1.64 亿采样步；本机评估中 4 个回合均达到 15.01 秒上限，共到达 76 个航点。平均世界竖直摆角约 48°、峰值约 111°，仍需优化抑摆，不能据此判定实飞可用。详见[训练记录](records/server_s2_800_training_summary_20261101.json)和[评估记录](records/server_s2_800_evaluation_20261101.json)。
+
+本机也可调试训练，默认 4 个并行环境；主要训练仍推荐在 NVIDIA GPU 上完成：
 
 ```bash
 scripts/run.sh scripts/long_training.py -e s2_waypoint_passing_rigid
 ```
 
-服务器 S2 模型的导入与评估命令见 [S2 迁移记录](docs/SERVER_S2.md)。板卡配置参考 [Radxa Q6A 官方教程](https://docs.radxa.com/dragon/q6a)。模型接口、示例模型和验证结果见[模型迁移文档](docs/MODEL_MIGRATION.md)；每次修改记录在[更新日志](docs/CHANGELOG.md)。
+S1 柔性任务的迁移方法见[模型迁移文档](docs/MODEL_MIGRATION.md)；设备配置参考 [Radxa Q6A 官方教程](https://docs.radxa.com/dragon/q6a)。每次工程修改记录在[更新日志](docs/CHANGELOG.md)。
