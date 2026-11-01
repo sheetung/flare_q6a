@@ -67,3 +67,9 @@
 
 - 按用户选择将 README 主流程调整为 NVIDIA 训练后导入 FP32 策略，在板端使用 Adreno GPU 推理和仿真评估；GPU 主流程不要求安装 ONNX 或进行 NPU 量化。
 - 保留原有 ONNX 和 NPU 相关脚本与文档供后续参考；未修改模型、策略或运行后端。评估通过仅表示流程完成，不代表策略稳定或可实飞。
+
+## 2026-11-01：GPU 策略推理实机验证
+
+- 使用公开原版第 800 轮模型，在 Q6A 检查 tinygrad OpenCL 设备为 Qualcomm FD643，驱动 25.2.8；单条观测 Actor 与 PyTorch CPU 参考最大绝对误差 4.18e-7。
+- 200 次 batch=1 策略网络调用期间，当前进程 DRM GPU 引擎时间计数增加 21,091,750 ns，证明计算提交到 GPU；测试同时计算 Critic，含 Python、数据传输和同步，耗时 4.46 秒，不能作为实飞闭环延迟结论。完整结果见 records/gpu_inference_validation_20261101.json。
+- 使用原柔性航点环境进行短时均值策略仿真检查，结果见 records/gpu_simulation_validation_20261101.log；短运行仅验证执行，不证明收敛或实飞安全。
