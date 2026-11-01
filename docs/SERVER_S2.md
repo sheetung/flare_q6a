@@ -36,3 +36,7 @@ scripts/run.sh scripts/eval_server_s2.py --checkpoint records/run_s2_transfer/po
 仅加载可信来源的 `.pt` 和 `cfgs.pkl`，后者为可执行代码的 pickle。导入器核对配置、网络结构和 Actor 数值，并记录任务签名；生成的文件只包含 Actor，用于推理而不能续训。评估器也支持同一 S2 本机训练生成的 `checkpoint.npz`，并检查任务签名。模型、配置、环境源码或网格变化后需要重新导入，不能直接混用不同场景的 checkpoint。
 
 评估统计完整回合和被截断回合；执行完成不代表策略稳定或能够实飞。工程尚未接入 PX4 控制链。
+
+## 本次 800 轮结果
+
+训练与迁移详情见 `records/server_s2_800_training_summary_20261101.json`，板端评估见 `records/server_s2_800_evaluation_20261101.json`。本机模型、配置与完整日志保存在被 Git 忽略的 `records/run_server_s2_final_20261101/`；其中 `policy.npz` 为 Adreno 推理文件。4 个评估回合均达到 15.01 秒、共经过 76 个航点，但平均世界竖直摆角约 48.26°、峰值约 110.87°。该摆角和样本数说明仍需分析抑摆与泛化，尚不能用于实飞。

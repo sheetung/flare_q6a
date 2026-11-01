@@ -1,0 +1,18 @@
+{
+  "server_git_commit": "d99dabb234da32ec255c57e4d9ca3d5dca1bdc33",
+  "gpu": "NVIDIA GeForce RTX 5060 Ti 16GB",
+  "scenario": "s2_waypoint_passing_rigid",
+  "num_envs": 2048,
+  "iterations_completed": 800,
+  "logged_iterations": 800,
+  "total_timesteps": 163840000,
+  "training_seconds": 743.48,
+  "last_mean_reward": 18.2,
+  "last_mean_episode_length_steps": 1363.1,
+  "model_sha256": "c50adb649f9f4e8074186a5346fbd344fff3eac2762c16e2c791d2df7d8ce51f",
+  "config_sha256": "d7edee06393725c2a80cbacde865576b47838cd58e50456647aea8b263eff5ac",
+  "gpu_policy_sha256": "e80cd9d4177115b6bccb840216fc9045ed010c8092ac770258f47bbf67c851cd",
+  "training_log_sha256": "f501beba3de042d01c706597c0120124fed67bd61561d068eb20d3b955256a7d",
+  "transfer_actor_max_abs_error": 1.430511474609375e-06,
+  "record_note": "Mean reward and episode length are training-window statistics, not a convergence or flight certificate."
+}
