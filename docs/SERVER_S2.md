@@ -17,7 +17,7 @@ cd /home/sheetung/flare_ws/Flare
 ../.venv/bin/python -u train.py -e s2_waypoint_passing_rigid -B 2048 --max_iterations 800 --device cuda:0
 ```
 
-本次正式训练运行在服务器 `tmux` 会话 `q6a_rigid_800`。本机的 `scripts/watch_server_s2.sh` 会在连接中断后重试并显示当前训练轮次；该监控脚本不会自动重启训练。SSH 专用私钥和首次获取的主机密钥位于本机被 Git 忽略的 `records/run_ssh_5070ti/`；不要公开私钥。首次连接使用获取到的主机密钥固定连接，尚未通过独立渠道核验其指纹。
+本次正式训练运行在服务器 `tmux` 会话 `q6a_rigid_800`。本机的 `scripts/watch_server_s2.sh` 会在连接中断后重试并显示当前训练轮次；该监控脚本不会自动重启训练。`scripts/finish_server_s2.sh` 针对本次指定的训练目录等待完成并自动重连，核对远端和本机文件 SHA256 后导入和评估；本次在本机 tmux 的 `q6a_s2_auto_finish` 会话中运行。SSH 专用私钥和首次获取的主机密钥位于本机被 Git 忽略的 `records/run_ssh_5070ti/`；不要公开私钥。首次连接使用获取到的主机密钥固定连接，尚未通过独立渠道核验其指纹。
 
 两机时区均为 Asia/Shanghai；已按本机校准服务器时钟并启用 NTP。检查时两机系统均显示 NTP 尚未同步，不能保证长期不漂移。校时前的服务器正式训练已按要求删除，并在校时后重新开始；本机留存的旧实验副本不属于新训练。
 

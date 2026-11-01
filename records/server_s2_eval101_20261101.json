@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "scope": "server S2 actor on Adreno; local Vulkan environment; not a flight or convergence certificate",
+  "hardware": {
+    "name": "FD643",
+    "vendor_id": "0x5143",
+    "driver": "25.2.8-0ubuntu0.24.04.4",
+    "backend": "CL"
+  },
+  "checkpoint_sha256": "f883b416a44fc90e5bc2f47253c7186744460eed0a99e6cac629ce92545cf06e",
+  "steps": 1501,
+  "seed": 123,
+  "iteration": 101,
+  "task_signature": {
+    "model_sha256": "da5b3c6033fea31c22e883edb4f59f125f2234eb36698d1669dae4c910eb08cf",
+    "environment_sha256": "2791f211fddb66536d55c065d3a8854bde60b6a1f6f043812bf13448bec2f645",
+    "source_sha256": {
+      "scenario2_server.py": "afae641c0a304d915825c055d2824121aaea1d30596d46beea30e2269e7e1464",
+      "server_s2_mixer.py": "2005743696b2e02141a28a795345d3da5e051cfaaf307c3525f9563b58836a1f",
+      "body.obj": "8650e7977cc91ea9ee52a1fa7e84f29733f5d5c4a1a70110cba6cdb16c1bb27a",
+      "propeller0.obj": "779c227be187dd5d9102e4bd4d051013f637fb1301612b68b44cdf48a33953d4",
+      "propeller1.obj": "19ee558f0cee556df5d815b7d08374ae50c0a110b53eab9a977320d92206cf29",
+      "propeller2.obj": "605ecec4cfee47501b3d2df93b46728f5e14d62251db58295740534d54020fc1",
+      "propeller3.obj": "8147a830d3f2744eeb4518f45d34da40c910657878a412303ec3688c4316a9d6"
+    }
+  },
+  "completed_episodes": 2,
+  "requested_episodes": 2,
+  "requested_episodes_complete": true,
+  "evaluated_samples": 3002,
+  "failures": 0,
+  "safe_full_duration_episodes": 2,
+  "mean_episode_seconds": 15.01,
+  "median_episode_seconds": 15.01,
+  "max_episode_seconds": 15.01,
+  "mean_episode_reward": 15.57931803597603,
+  "action_clip_fraction": 0.020652898067954697,
+  "termination_causes": {},
+  "partial_episodes": [],
+  "note": "Task means are step-weighted over completed episodes; partial episodes are censored. Safe full duration alone does not establish waypoint tracking performance.",
+  "mean_drone_error_m": 1.1539350310607326,
+  "mean_payload_error_m": 1.3397420980458177,
+  "mean_swing_deg": 30.78172941673001,
+  "mean_waypoint_hits": 0.012658227848101266,
+  "waypoints_reached": 38,
+  "peak_swing_deg": 81.49246978759766
+}
