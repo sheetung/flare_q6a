@@ -357,3 +357,5 @@ GPU 恢复复测完成 PASS：16×32 合并提交再次完成两轮/40 次更新
 OpenCL对照短测完成：两驱动柔性B512×100×3轮/60更新均PASS，源码哈希/算法/任务模型签名/执行配置一致且全部float checkpoint有限FP32、sigma正。排首轮，QCOM1115.041/Rusticl1028.943 samples/s（本次+8.37%）；采样35.505/35.839s，学习10.456/13.981s（学习耗时减少25.22%）。此前独立Rusticl1117.361说明跨次波动不可忽略，不能宣称稳定8%收益；热历史未控制，系统默认仍Rusticl。docs/CHANGELOG.md及OPENCL_COMPARISON记录结果、来源、文件与限制。
 
 专有驱动实际B512大小数值回归补充PASS：51200样本/逻辑批12800/micro4096/1epoch/4更新，对照原rsl_rl最大参数误差3.450e-6，见qcom_full_b512_parity_check.log。核对/etc/OpenCL/vendors仍仅rusticl.icd，qcom-adreno-cl1未系统安装；所有试验均已结束，无后台长训练。
+
+2026-11-01 整理工程准备推送用户指定远程：清理一次性gpu_probe及根目录重复测试转发文件，删除只重复手写概率/裁剪/GAE表达式的check_ppo，保留tests目录内原版PPO/微批/续训/GPU索引/物理及日志关键检查；保留历史实验记录及本机训练目录。更新README及docs/CHANGELOG.md。

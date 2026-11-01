@@ -25,7 +25,7 @@ rl_radxa/
 │   │   └── train/s1_train_config.yaml
 │   ├── runners/ppo.py         # OpenCL Actor/Critic与PPO
 │   ├── utils/                 # 配置、GPU算子、硬件和日志
-│   ├── tests/                 # 物理、数值和独立运行验证
+│   ├── tests/                 # 保留物理、PPO、GPU和日志核心验证
 │   ├── assets/                # 刚性/柔性模型及本地网格
 │   ├── reference/Flare/       # 原工程源码、配置、资源和文档快照
 │   └── train.py / evaluate.py # 旧入口兼容转发
@@ -88,10 +88,10 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 512
 
 ## 1. 获取源码
 
-当前只维护本地 Git，没有配置或推送远程。以后有远程地址时：
+工程源码可从用户指定的 GitHub 仓库获取：
 
 ```bash
-git clone --recurse-submodules <本工程仓库地址> rl_radxa
+git clone --recurse-submodules https://github.com/sheetung/flare_QCS6490.git rl_radxa
 cd rl_radxa
 ```
 
@@ -194,9 +194,9 @@ python3 scripts/training_status.py --output records/<运行目录> --watch
 tail -f records/<运行目录>/training.log
 ```
 
-GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延迟出现异常，频率不是占用率；NPU未使用。每次修改的原因、行为和验证结果写入 records/progress.md 并提交本地Git。历史悬停日志/测试结果保留作审计，不是当前任务配置。
+GPU占用来自本进程DRM engine计数差分，短窗口可因驱动结算延迟出现异常，频率不是占用率；NPU未使用。每次修改的原因、行为和验证结果写入 records/progress.md 并提交本地Git。历史悬停日志/测试结果保留作审计，不是当前任务配置。一次性 GPU 探针和重复的旧测试入口已清理；测试请使用 flare_q6a/tests/ 下的路径。
 
-其他高通板需要Linux ARM64/Python3.12/glibc≥2.38，以及真实Adreno Vulkan/OpenCL。ICD路径不同可设置 `RL_VULKAN_ICD=/绝对路径/vendor_icd.json`。驱动、轮子、计算块/并行性能、长时稳定性和收敛需重新测试；本工程尚未验证PX4实飞、NPU或第二块开发板。无需CPU训练回退，也不会自动推送远程。
+其他高通板需要Linux ARM64/Python3.12/glibc≥2.38，以及真实Adreno Vulkan/OpenCL。ICD路径不同可设置 `RL_VULKAN_ICD=/绝对路径/vendor_icd.json`。驱动、轮子、计算块/并行性能、长时稳定性和收敛需重新测试；本工程尚未验证PX4实飞、NPU或第二块开发板。训练不会自动推送远程；Git 推送需手动执行。
 
 ## 8. 本机性能验证（2026-10-17）
 

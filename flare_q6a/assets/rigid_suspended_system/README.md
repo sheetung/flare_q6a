@@ -6,6 +6,6 @@
 
 无人机质心处的三个共点XYZ连续转动关节近似球铰；负载端固定。虚拟铰链有微小非零惯量以避免零惯量奇异。杆不弯曲、不伸长、不松弛，可传递压力；球铰近似存在Euler奇异性。任务与上游一样关闭碰撞，由原环境边界/摆角逻辑终止。
 
-新环境仅替换模型构建与关节重置，奖励、目标与控制不在模型文件中修改。完整对齐检查：`scripts/run.sh flare_q6a/check_waypoint_alignment.py`。
+新环境仅替换模型构建与关节重置，奖励、目标与控制不在模型文件中修改。完整对齐检查：`scripts/run.sh flare_q6a/tests/check_waypoint_alignment.py`。
 
 网格引用本目录相邻suspended_system/的本地副本，不再引用根Flare。仅视觉路径迁移，检查点任务签名规范化路径以保留旧模型兼容。
