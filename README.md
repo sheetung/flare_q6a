@@ -1,8 +1,17 @@
 # FLARE on Qualcomm
 
-在 NVIDIA GPU 上训练 FLARE 无人机吊挂策略，再迁移到 Radxa Dragon Q6A 等高通平台验证和部署。当前主要支持原版柔性绳 `s1_waypoint_passing` 航点跟踪；刚性绳任务也保留在 `flare_q6a/`。
+在 NVIDIA GPU 上训练 FLARE 无人机吊挂策略，再迁移到 Radxa Dragon Q6A 等高通平台验证和部署。场景使用 `s*` 命名，并分别保存环境、模型和训练配置。
 
 板端使用 Adreno GPU 进行策略推理，使用 Vulkan 进行仿真；已完成模型转换和仿真运行验证。工程尚未接入 PX4 实飞控制。
+
+当前场景：
+
+| 场景 | 模型与配置 |
+| --- | --- |
+| `s1_waypoint_passing` | 原 FLARE 柔性绳 |
+| `s2_waypoint_passing_rigid` | 服务器对应的双关节刚性绳航点任务 |
+
+其他服务器场景需逐项迁移和验证；旧的 `s1_waypoint_passing_rigid` 名称保留兼容，它与 `s2` 不是同一个模型。
 
 ## 1. NVIDIA 上训练
 
@@ -32,4 +41,10 @@ scripts/run.sh flare_q6a/waypoint_passing_eval.py \
 
 迁移生成 GPU 用的 `policy.npz`，无需量化。评估结果自动保存在 `records/`。板端训练可用于调试，但由于资源限制不推荐作为主要训练方式。
 
-板卡配置参考 [Radxa Q6A 官方教程](https://docs.radxa.com/dragon/q6a)。模型接口、示例模型和验证结果见[模型迁移文档](docs/MODEL_MIGRATION.md)；每次修改记录在[更新日志](docs/CHANGELOG.md)。
+本机按相同场景名启动 S2 训练（默认 4 个并行环境）：
+
+```bash
+scripts/run.sh scripts/long_training.py -e s2_waypoint_passing_rigid
+```
+
+服务器 S2 模型的导入与评估命令见 [S2 迁移记录](docs/SERVER_S2.md)。板卡配置参考 [Radxa Q6A 官方教程](https://docs.radxa.com/dragon/q6a)。模型接口、示例模型和验证结果见[模型迁移文档](docs/MODEL_MIGRATION.md)；每次修改记录在[更新日志](docs/CHANGELOG.md)。

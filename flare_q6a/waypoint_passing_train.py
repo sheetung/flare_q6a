@@ -14,7 +14,7 @@ from flare_q6a.envs.surrogate_env import CableEnv,ROOT
 from flare_q6a.runners.ppo import ActorCritic,PPO
 from flare_q6a.utils.hardware import configure_main_cpu
 from flare_q6a.utils.metrics import ExperimentLogger
-from flare_q6a.utils.config import RIGID_TASK,FLEX_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,default_envs,train_config,task_signature
+from flare_q6a.utils.config import RIGID_TASK,FLEX_TASK,SERVER_S2_TASK,DEFAULT_ENVS,DEFAULT_ITERATIONS,default_envs,train_config,task_signature
 
 def main():
     faulthandler.enable()
@@ -30,12 +30,12 @@ def main():
     p.add_argument('--resume',help='schema-2 training checkpoint; environment starts fresh')
     p.add_argument('--physics',choices=['surrogate','genesis'],default='genesis')
     p.add_argument('--timeout-bootstrap',choices=['rsl','terminal'],default='rsl')
-    p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK],default=FLEX_TASK)
+    p.add_argument('-e','--exp_name',choices=[FLEX_TASK,RIGID_TASK,SERVER_S2_TASK],default=FLEX_TASK)
     p.add_argument('-v','--vis',action='store_true',help='show original Genesis viewer and target')
     args=p.parse_args()
     if args.envs is None:args.envs=default_envs(args.exp_name)
-    if args.exp_name==RIGID_TASK and args.physics!='genesis':p.error('rigid waypoint task requires Genesis Vulkan physics')
-    source_train=train_config()
+    if args.exp_name in (RIGID_TASK,SERVER_S2_TASK) and args.physics!='genesis':p.error('rigid waypoint task requires Genesis Vulkan physics')
+    source_train=train_config(args.exp_name)
     if args.steps is None:args.steps=source_train['runner']['num_steps_per_env']
     if args.vis and args.physics!='genesis':p.error('-v requires --physics genesis')
     assert min(args.envs,args.steps,args.iterations)>0
@@ -61,16 +61,23 @@ def main():
         if meta['run']['physics']!=args.physics:raise ValueError('resume physics mismatch')
         if meta['run'].get('experiment','s1_waypoint_passing')!=args.exp_name:raise ValueError('resume experiment mismatch')
         if args.exp_name==RIGID_TASK and meta['run'].get('task_signature')!=task_signature(True):raise ValueError('resume rigid waypoint task/model mismatch')
+        if args.exp_name==SERVER_S2_TASK:
+            from flare_q6a.envs.server_s2_bridge import server_s2_signature
+            if meta['run'].get('task_signature')!=server_s2_signature():raise ValueError('resume S2 task/model mismatch')
     Tensor.manual_seed(source_train['seed']);setup_start=time.perf_counter()
     if args.physics=='genesis':
         from flare_q6a.envs.genesis_bridge import GenesisBridge,torch
         torch.manual_seed(source_train['seed'])
+        if args.exp_name==SERVER_S2_TASK:
+            from flare_q6a.envs.server_s2_bridge import setup_server_s2
+            setup_server_s2()
         env=GenesisBridge(args.envs,show_viewer=args.vis,rigid=args.exp_name==RIGID_TASK)
         # Original FLARE calls learn(init_at_random_ep_len=True).
         env.env.episode_length_buf=torch.randint_like(env.env.episode_length_buf,high=env.env.max_episode_length)
     else:env=CableEnv(args.envs)
     num_obs=env.obs().shape[1]
-    model=ActorCritic(num_obs);trainer=PPO(model,cfg,microbatch_size=compute_chunk)
+    policy=source_train['policy']
+    model=ActorCritic(num_obs,policy['actor_hidden_dims'],policy['critic_hidden_dims'],policy['activation'],policy['init_noise_std']);trainer=PPO(model,cfg,microbatch_size=compute_chunk)
     cpu_staging_threads=torch.get_num_threads() if args.physics=='genesis' else None
     host_dispatch=configure_main_cpu()
     print(f'Host dispatch: {host_dispatch}',flush=True)

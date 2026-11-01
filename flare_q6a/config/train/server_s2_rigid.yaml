@@ -1,0 +1,46 @@
+# 刚性缆绳训练配置（s2_waypoint_passing_rigid）
+# 使用更大的网络 [256,256,128] 和更高的学习率，因为刚性缆绳任务更简单
+
+# PPO 算法配置
+algorithm:
+  clip_param: 0.2                # PPO 裁剪参数
+  desired_kl: 0.01               # 期望 KL 散度
+  entropy_coef: 0.002            # 熵系数
+  gamma: 0.99                    # 折扣因子
+  lam: 0.95                      # GAE λ 参数
+  learning_rate: 0.0005          # 学习率（比基础配置 0.0003 更高）
+  max_grad_norm: 1.0             # 梯度裁剪阈值
+  num_learning_epochs: 5         # 每次数据收集后的学习轮数
+  num_mini_batches: 4            # 每次学习的小批量数量
+  schedule: adaptive             # 学习率调度
+  use_clipped_value_loss: True   # 是否使用裁剪的值函数损失
+  value_loss_coef: 1.0           # 值函数损失系数
+
+init_member_classes: {}          # 初始化成员类
+
+# 策略网络配置（比基础配置更大的网络）
+policy:
+  activation: elu                # 激活函数（elu 比 tanh 在深层网络中表现更好）
+  actor_hidden_dims: [256, 256, 128]  # Actor 网络：3 层，更宽
+  critic_hidden_dims: [256, 256, 128] # Critic 网络：3 层，更宽
+  init_noise_std: 0.8            # 初始噪声标准差（比基础配置 1.0 更小）
+
+# 训练运行器配置
+runner:
+  algorithm_class_name: PPO      # 使用的强化学习算法
+  checkpoint: -1                 # 加载的 checkpoint 编号
+  experiment_name: rigid_cable_hovering  # 实验名称
+  load_run: -1                   # 加载的训练运行编号
+  log_interval: 1                # 日志输出间隔
+  max_iterations: 1600           # 最大训练迭代次数（比基础配置 500 更多）
+  num_steps_per_env: 100         # 每个环境每次收集的步数
+  policy_class_name: ActorCritic # 策略网络类型
+  record_interval: -1            # 录制间隔
+  resume: False                  # 是否从 checkpoint 恢复
+  resume_path: null              # 恢复路径
+  run_name:                      # 运行名称
+  runner_class_name: runner_class_name  # 运行器类名
+  save_interval: 100             # checkpoint 保存间隔
+
+runner_class_name: OnPolicyRunner  # 在线策略运行器
+seed: 1                          # 随机种子

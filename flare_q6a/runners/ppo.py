@@ -15,19 +15,28 @@ from flare_q6a.utils.hardware import require_adreno
 from flare_q6a.utils.gpu_ops import take_rows
 
 class ActorCritic:
-    def __init__(self,num_obs=26):
+    def __init__(self,num_obs=26,actor_hidden=(128,128),critic_hidden=(128,128),activation='tanh',init_noise_std=1.0):
+        if activation not in ('tanh','elu'):raise ValueError('unsupported activation')
+        self.activation=activation
         def linear(inputs,outputs):
             layer=nn.Linear(inputs,outputs)
             # Consume each random initialization before constructing the next
             # layer; lazy equal-shaped random tensors can otherwise alias.
             layer.weight.realize();layer.bias.realize()
             return layer
-        self.actor=[linear(num_obs,128),linear(128,128),linear(128,4)]
-        self.critic=[linear(num_obs,128),linear(128,128),linear(128,1)]
-        # rsl_rl optimizes sigma directly, not log(sigma).
-        self.std=Tensor.ones(4)
+        def layers(hidden, output):
+            sizes=[num_obs,*hidden,output]
+            return [linear(x,y) for x,y in zip(sizes,sizes[1:])]
+        self.actor=layers(actor_hidden,4)
+        self.critic=layers(critic_hidden,1)
+        self.std=Tensor.ones(4)*init_noise_std
     def forward(self,obs):
-        def run(ls):return ls[2](ls[1](ls[0](obs).tanh()).tanh())
+        def run(ls):
+            x=obs
+            for layer in ls[:-1]:
+                x=layer(x)
+                x=x.tanh() if self.activation=='tanh' else x.elu()
+            return ls[-1](x)
         return run(self.actor),run(self.critic).squeeze(-1)
     def logprob(self,a,mean):
         return (-.5*((a-mean)/self.std).square()-self.std.log()-.5*math.log(2*math.pi)).sum(-1)

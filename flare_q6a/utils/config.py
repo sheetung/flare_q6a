@@ -4,15 +4,18 @@ from pathlib import Path
 import yaml
 ROOT=Path(__file__).resolve().parents[2]
 RIGID_TASK='s1_waypoint_passing_rigid'
+SERVER_S2_TASK='s2_waypoint_passing_rigid'
 FLEX_TASK='s1_waypoint_passing'
 MODEL=ROOT/'flare_q6a/assets/rigid_suspended_system/rigid_suspended_system.urdf'
 DEFAULT_ENVS=2048  # fastest measured rigid-task profile after native GPU row lookup.
 DEFAULT_FLEX_ENVS=512  # measured flexible-task profile; 63-DOF physics needs more shared memory.
 DEFAULT_ITERATIONS=800  # original waypoint_passing_train.py command-line default
 
-def default_envs(task):return DEFAULT_ENVS if task==RIGID_TASK else DEFAULT_FLEX_ENVS
+def default_envs(task):return 4 if task==SERVER_S2_TASK else (DEFAULT_ENVS if task==RIGID_TASK else DEFAULT_FLEX_ENVS)
 
-def train_config():return yaml.safe_load((ROOT/'flare_q6a/config/train/s1_train_config.yaml').read_text())
+def train_config(task=FLEX_TASK):
+    name='server_s2_rigid.yaml' if task==SERVER_S2_TASK else 's1_train_config.yaml'
+    return yaml.safe_load((ROOT/'flare_q6a/config/train'/name).read_text())
 def environment_config(rigid=True):
     cfg=yaml.safe_load((ROOT/'flare_q6a/config/envs/s1_env_config.yaml').read_text())
     if rigid:cfg['env_cfg']['num_of_dofs']=3
