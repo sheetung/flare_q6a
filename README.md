@@ -91,7 +91,7 @@ scripts/run.sh scripts/long_training.py -e s1_waypoint_passing -B 512
 工程源码可从用户指定的 GitHub 仓库获取：
 
 ```bash
-git clone --recurse-submodules https://github.com/sheetung/flare_QCS6490.git rl_radxa
+git clone --recurse-submodules git@github.com:sheetung/flare_QCS6490.git rl_radxa
 cd rl_radxa
 ```
 

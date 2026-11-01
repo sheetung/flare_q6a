@@ -42,3 +42,9 @@
 - 测试命令统一使用flare_q6a/tests/路径；训练和评估旧入口继续兼容。保留records中已跟踪的实验、历史诊断及用户本机忽略的训练目录。
 - README更新为用户指定的GitHub仓库地址和测试目录；原环境、模型、PPO参数、默认训练命令及子模块固定版本不变。
 - 验证：环境对齐、日志/评估统计、入口help、语法和Git差异检查通过；实机Adreno GPU行索引、原版PPO与续训对照、微批余块及8次实际梯度裁剪均通过，见records/cleanup_validation.json。
+
+## 2026-11-01：配置 SSH 远程并推送
+
+- 按用户提供的 SSH 地址配置 origin，使用现有 SSH 密钥完成 GitHub 身份验证，main 已设置跟踪 origin/main。
+- 当前网络直连 GitHub 22 端口超时；此工作区的本地 Git 配置使用现有代理连接 GitHub SSH 443，主机公钥来自 GitHub 官方元数据并严格校验。代理设置仅保存在本机 .git 中，不随仓库发布。
+- 验证：首次推送后，通过 SSH 读取远端 main，确认与本地提交一致；更新 README 使用 SSH 克隆地址。
