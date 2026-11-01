@@ -1,5 +1,13 @@
 # NVIDIA 训练模型迁移至 Q6A
 
+## 瑞莎官方资料
+
+- [Dragon Q6A 官方教程](https://docs.radxa.com/dragon/q6a)和 [OpenCL 使用指南](https://docs.radxa.com/dragon/q6a/system-config/opencl)。
+- [启用 NPU](https://docs.radxa.com/en/dragon/q6a/app-dev/npu-dev/fastrpc-setup)、[NPU 快速验证](https://docs.radxa.com/en/dragon/q6a/app-dev/npu-dev/quick-example)。
+- [QAIRT 安装](https://docs.radxa.com/en/dragon/q6a/app-dev/npu-dev/qairt-install)、[模型转换及 NPU 推理示例](https://docs.radxa.com/en/dragon/q6a/app-dev/npu-dev/qairt-usage)。安装文档也提供 QCS6490 ARM64 Docker 镜像，是否适用于本策略需实测。
+
+官方示例的 QCS6490 HTP 参数为 `dsp_arch=v68`、`soc_id=35`，量化 DLC 后还需生成 Context-Binary，再在设备端运行。具体 SDK 和驱动版本以官方教程及实际系统为准。
+
 ## 环境准备
 
 NVIDIA 训练端使用 [FLARE 固定版本](https://github.com/BEI11HAI/Flare/tree/41f03b94f2f724205e5e24617010467aae2a3f98)及其指定 Genesis / rsl_rl 版本。原训练脚本将配置保存为 `cfgs.pkl`，与检查点一起复制。仅加载可信文件：Python pickle 可执行任意代码；`model_*.pt` 也应来自可信来源。

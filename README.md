@@ -46,4 +46,4 @@ scripts/quantize_policy_qairt.sh records/run_my_policy/actor.onnx \
   records/run_my_calibration/input_list.txt records/run_my_quantized
 ```
 
-量化后还需要验证误差、NPU 运行和闭环控制；采样数据应覆盖目标运行场景。设备适配、模型接口、示例模型和当前验证结果见[模型迁移文档](docs/MODEL_MIGRATION.md)。每次工程修改记录在[更新日志](docs/CHANGELOG.md)。
+量化后还需要验证误差、NPU 运行和闭环控制；采样数据应覆盖目标运行场景。板卡配置参考 [Radxa Q6A 官方教程](https://docs.radxa.com/dragon/q6a)。设备适配、模型接口、示例模型和当前验证结果见[模型迁移文档](docs/MODEL_MIGRATION.md)。每次工程修改记录在[更新日志](docs/CHANGELOG.md)。
