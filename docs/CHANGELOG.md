@@ -85,3 +85,8 @@
 - 校时后新训练第 101 轮模型已导入本机：2 个环境均完成 15.01 秒，分别到达 20、18 个航点；本机 S2 PPO 恢复训练烟测通过。评估仅为小样本，见 records/server_s2_eval101_20261101.json。
 - 校时后 NVIDIA 训练正常完成 800 轮，2048 并行、163,840,000 采样步，训练日志统计 743.48 秒；完整模型及配置通过 SHA256 校验迁移，GPU Actor 与 PyTorch 的最大绝对误差约 1.43e-6。
 - 最终模型本机 Adreno/Vulkan 评估：4 环境各完成 15.01 秒上限、无记录的失败，累计 76 航点；平均世界竖直摆角约 48.26°、最大约 110.87°，存在较大摆动，小样本不能证明实飞安全。见 records/server_s2_800_training_summary_20261101.json 和 records/server_s2_800_evaluation_20261101.json。
+
+## 2026-11-01：服务器启用自动校时
+
+- 用户授权更改服务器时间后，检查发现原 Ubuntu NTP 地址无响应；实测服务器可访问 `ntp.aliyun.com`，新增 `/etc/systemd/timesyncd.conf.d/60-flare-ntp.conf` 指定该时间源并保留 Ubuntu 作为备选。
+- 重启服务器 `systemd-timesyncd` 后确认上海时区、NTP 服务运行、`System clock synchronized: yes`；本机当前 NTP 尚未同步，因此两机长期偏差仍取决于本机时钟。
